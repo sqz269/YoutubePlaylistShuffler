@@ -1,0 +1,14 @@
+.icon-size-30
+{
+    font-size: 30px !important;
+}
+
+.hover-decor-none:hover
+{
+    text-decoration: none !important;
+}
+
+.player-control:hover
+{
+    background-color: #ededed;
+}
