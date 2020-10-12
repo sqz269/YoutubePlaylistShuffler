@@ -43,5 +43,6 @@ function playNextVideo()
     let videoThumbnail = video.snippet.thumbnails.default.url;
     let videoTitle = video.snippet.title;
 
+    document.title = videoTitle;
     playVideo(videoId);
 }
