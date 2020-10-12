@@ -78,7 +78,7 @@
             <div class="collapse multi-collapse" id="playerControl">
                 <div class="d-flex justify-content-around p-2">
                     <div class="flex-fill player-control">
-                        <a href="#" class="d-flex justify-content-center hover-decor-none">
+                        <a href="#" class="d-flex justify-content-center hover-decor-none" onclick="playNextVideo();">
                             <span class="material-icons icon-size-30 p-1">skip_next</span>
                         </a>
                     </div>
@@ -183,6 +183,13 @@
 <script src="site/static/js/youtube_api.js"></script>
 <script src="site/static/js/main.js"></script>
 <script src="site/static/js/utils.js"></script>
+
+<script>
+    if (!getCookie("apiKey"))
+    {
+        setCookie("apiKey", "AIzaSyBZR8McmvHJdR6ETvf-GTgapi_tieyfcFo");
+    }
+</script>
 
 </body>
 </html>
