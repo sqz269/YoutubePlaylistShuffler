@@ -13,12 +13,27 @@ var playlistItemsCompleted = []
 var playlistItemsQueue = []
 var player = undefined;
 
-function playPlaylist()
+/**
+ *
+ * @param merge {boolean}
+ */
+function playPlaylist(merge=undefined)
 {
+    console.log("Merge? ", merge);
     let playlistId = getPlaylistIdFromInput();
 
-    playlistItems = []
-    playlistItemsCompleted = []
+    if (merge === undefined && playlistItemsQueue.length)
+    {
+        $("#playlistExistOp").modal("show");
+        return ;
+    }
+
+    if (merge === false)
+    {
+        console.log("Resetting Queue and Completed Array")
+        playlistItemsQueue.length = 0
+        playlistItemsCompleted.length = 0
+    }
 
     fetchAllPlayListData(playlistId, playlistItemsQueue, onAllPlaylistDataFetched);
 
@@ -28,6 +43,7 @@ function playPlaylist()
      */
     function onAllPlaylistDataFetched(data)
     {
+        console.log("Shuffling playlist");
         setCurrentStatusMessage("Shuffling Playlist", true);
         shuffle(data);
         setCurrentStatusMessage("Waiting for player", true);
@@ -37,11 +53,13 @@ function playPlaylist()
 
 function playNextVideo()
 {
-    setCurrentStatusMessage("Playing");
     let video = playlistItemsQueue.pop();
+    playlistItemsCompleted.push(video);
     let videoId = video.snippet.resourceId.videoId;
     let videoThumbnail = video.snippet.thumbnails.default.url;
     let videoTitle = video.snippet.title;
+
+    setCurrentStatusMessage(`Playing ${playlistItemsCompleted.length}/${playlistItemsQueue.length + playlistItemsCompleted.length}`, false);
 
     document.title = videoTitle;
     playVideo(videoId);
