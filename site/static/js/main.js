@@ -1,8 +1,8 @@
 function getPlaylistIdFromInput()
 {
     let element = document.getElementById("playlist-input");
-    let playlistId = getQueryParams(element.value).list;
-    if (playlistId === undefined)
+    let playlistId = getQueryParams(element.value, "list");
+    if (playlistId === null || playlistId === undefined)
     {
         return element.value;
     }
@@ -43,5 +43,6 @@ function playNextVideo()
     let videoThumbnail = video.snippet.thumbnails.default.url;
     let videoTitle = video.snippet.title;
 
+    document.title = videoTitle;
     playVideo(videoId);
 }
