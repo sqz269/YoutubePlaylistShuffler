@@ -1,22 +1,19 @@
 /**
  * Get query parameter from url
  * @param qs {string}
+ * @param name {string}
  * @returns {Object}
  */
-function getQueryParams(qs)
+function getQueryParams(qs, name)
 {
-    qs = qs.split('?').join(' ');
-
-    let params = {},
-        tokens,
-        re = /[?&]?([^=]+)=([^&]*)/g;
-
-    while (tokens = re.exec(qs))
+    try
     {
-        params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
+        let url = new URL(qs);
+        return url.searchParams.get(name);
+    } catch (e)
+    {
+        return null;
     }
-
-    return params;
 }
 
 /**

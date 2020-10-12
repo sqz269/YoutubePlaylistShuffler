@@ -1,8 +1,8 @@
 function getPlaylistIdFromInput()
 {
     let element = document.getElementById("playlist-input");
-    let playlistId = getQueryParams(element.value).list;
-    if (playlistId === undefined)
+    let playlistId = getQueryParams(element.value, "list");
+    if (playlistId === null || playlistId === undefined)
     {
         return element.value;
     }
