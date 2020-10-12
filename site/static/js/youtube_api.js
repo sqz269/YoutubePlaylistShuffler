@@ -135,10 +135,17 @@ function loadAuthKey(client_id)
     gapi.auth2.init({client_id: client_id});
 }
 
+function setAdvancedSettingsInputFields()
+{
+    $("#clientIdInput").val(getCookie("clientId"));
+    $("#apiKeyInput").val(getCookie("apiKey"));
+}
+
 window.addEventListener('load', function () {
     gapi.load("client:auth2", function ()
     {
         loadClient(getCookie("apiKey"));
         loadAuthKey(getCookie("clientId"));
+        setAdvancedSettingsInputFields();  // Set API Key and Client ID in the Input field
     })
 });
