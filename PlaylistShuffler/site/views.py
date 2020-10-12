@@ -9,4 +9,4 @@ def index():
         resp.set_cookie('apiKey', '')
     if 'clientId' not in request.cookies:
         resp.set_cookie('clientId', '')
-    return render_template("index.html")
+    return resp
