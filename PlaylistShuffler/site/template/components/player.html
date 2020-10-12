@@ -1,32 +1,23 @@
-<div class="m-5">
-    <p>
-        <button class="btn btn-outline-primary btn-block" type="button" data-toggle="collapse"
-                data-target=".multi-collapse"
-                aria-expanded="false" aria-controls="player playerControll">Toggle Display
-        </button>
-    </p>
-    <div class="row">
-        <div class="col-12">
-            <div class="collapse multi-collapse" id="playerControl">
-                <div class="d-flex justify-content-around p-2">
-                    <div class="flex-fill player-control">
-                        <a href="#" class="d-flex justify-content-center hover-decor-none" onclick="playNextVideo();">
-                            <span class="material-icons icon-size-30 p-1">skip_next</span>
-                        </a>
-                    </div>
-                    <div class="flex-fill player-control">
-                        <a href="#" class="d-flex justify-content-center hover-decor-none">
-                            <span class="material-icons icon-size-30 p-1">shuffle</span>
-                        </a>
-                    </div>
+<div class="w-100 h-100 mr-5 ml-5">
+    <div class="row h-100">
+        <div class="col-12 h-100">
+            <div class="collapse multi-collapse h-100" id="video-player">
+                <!--<div class="d-flex justify-content-around p-2">
+                        <div class="flex-fill player-control">
+                            <a href="#" class="d-flex justify-content-center hover-decor-none" onclick="playNextVideo();">
+                                <span class="material-icons icon-size-30 p-1">skip_next</span>
+                            </a>
+                        </div>
+                        <div class="flex-fill player-control">
+                            <a href="#" class="d-flex justify-content-center hover-decor-none">
+                                <span class="material-icons icon-size-30 p-1">shuffle</span>
+                            </a>
+                        </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-12">
-            <div class="collapse multi-collapse" id="video-player">
-                <div class="row">
-                    <div class="col-9" id="player"></div>
-                    <div class="col-3">
+                !-->
+                <div class="row h-100">
+                    <div class="col-9 h-85" id="player"></div>
+                    <div class="col-3 h-85">
                         <div class="table-responsive">
                         <table class="table table-hover m-0">
                             <thead>
@@ -47,6 +38,9 @@
                             </tbody>
                         </table>
                         </div>
+                    </div>
+                    <div class="col-12 h-15 p-3">
+                        <h3 id="video-title"></h3>
                     </div>
                 </div>
             </div>
