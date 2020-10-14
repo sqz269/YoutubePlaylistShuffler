@@ -62,5 +62,6 @@ function playNextVideo()
     setCurrentStatusMessage(`Playing ${playlistItemsCompleted.length}/${playlistItemsQueue.length + playlistItemsCompleted.length}`, false);
 
     document.title = videoTitle;
+    $("#video-title").text(videoTitle);
     playVideo(videoId);
 }
