@@ -16,7 +16,12 @@
                 </div>
                 !-->
                 <div class="row h-100">
-                    <div class="col-9 h-85" id="player"></div>
+                    <div class="col-9 h-85">
+                        <div class="w-100" style="height: 93%;" id="player"></div>
+                        <button class="btn btn-outline-secondary btn-block btn-xs" onclick="javascript:playNextVideo();">
+                            <span class="material-icons">skip_next</span>
+                        </button>
+                    </div>
                     <div class="col-3 h-85">
                         <div class="table-responsive">
                         <table class="table table-hover m-0">
@@ -39,8 +44,9 @@
                         </table>
                         </div>
                     </div>
-                    <div class="col-12 h-15 p-3">
-                        <h3 id="video-title"></h3>
+                    <div class="col-12 h-15">
+                        <hr class="my-1">
+                        <h4 id="video-title" class="mt-1"></h4>
                     </div>
                 </div>
             </div>
