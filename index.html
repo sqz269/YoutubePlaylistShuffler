@@ -13,7 +13,7 @@
           crossorigin="anonymous"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
           rel="stylesheet">
-    <link rel="stylesheet" href="/site/static/css/index.css">
+    <link rel="stylesheet" href="site/static/css/index.css">
 </head>
 <body>
 
@@ -202,10 +202,17 @@
         integrity="sha512-VEd+nq25CkR676O+pLBnDW09R7VQX9Mdiij052gVCp5yVH3jGtH70Ho/UUv4mJDsEdTvqRCFZg0NKGiojGnUCw=="
         crossorigin="anonymous"></script>
 
-<script src="/site/static/js/youtube_player_api.js"></script>
-<script src="/site/static/js/youtube_api.js"></script>
-<script src="/site/static/js/main.js"></script>
-<script src="/site/static/js/utils.js"></script>
+<script src="site/static/js/youtube_player_api.js"></script>
+<script src="site/static/js/youtube_api.js"></script>
+<script src="site/static/js/main.js"></script>
+<script src="site/static/js/utils.js"></script>
+
+<script>
+    if (!getCookie("apiKey"))
+    {
+        setCookie("apiKey", "AIzaSyBZR8McmvHJdR6ETvf-GTgapi_tieyfcFo");
+    }
+</script>
 
 </body>
 </html>
