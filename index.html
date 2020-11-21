@@ -13,7 +13,7 @@
           crossorigin="anonymous"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
           rel="stylesheet">
-    <link rel="stylesheet" href="site/static/css/index.css">
+    <link rel="stylesheet" href="/site/static/css/index.css">
 </head>
 <body>
 
@@ -36,7 +36,10 @@
                    aria-expanded="false" aria-controls="player playerControll" href="#">Show Player</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="javascript:authenticate();">Authorize</a>
+                <a class="nav-link" href="#" data-toggle="modal" data-target="#advancedSettings">Save Progress</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:authorize();">Authorize</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#" data-toggle="modal" data-target="#advancedSettings">Advanced Settings</a>
@@ -73,47 +76,43 @@
     <div class="row h-100">
         <div class="col-12 h-100">
             <div class="collapse multi-collapse h-100" id="video-player">
-                <!--<div class="d-flex justify-content-around p-2">
-                        <div class="flex-fill player-control">
-                            <a href="#" class="d-flex justify-content-center hover-decor-none" onclick="playNextVideo();">
-                                <span class="material-icons icon-size-30 p-1">skip_next</span>
-                            </a>
-                        </div>
-                        <div class="flex-fill player-control">
-                            <a href="#" class="d-flex justify-content-center hover-decor-none">
-                                <span class="material-icons icon-size-30 p-1">shuffle</span>
-                            </a>
-                        </div>
-                </div>
-                !-->
                 <div class="row h-100">
                     <div class="col-9 h-85">
                         <div class="w-100" style="height: 93%;" id="player"></div>
-                        <button class="btn btn-outline-secondary btn-block btn-xs" onclick="javascript:playNextVideo();">
-                            <span class="material-icons">skip_next</span>
-                        </button>
+                        <div class="row">
+                            <div class="col-6">
+                                <button class="btn btn-outline-secondary btn-block btn-xs" onclick="playNextVideo();">
+                                    <span class="material-icons">skip_next</span>
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-outline-secondary btn-block btn-xs" onclick="playNextVideo();">
+                                    <span class="material-icons">repeat_one</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="col-3 h-85">
-                        <div class="table-responsive">
-                        <table class="table table-hover m-0">
-                            <thead>
-                            <tr class="d-none">
-                                <th scope="col">TODO</th>
-                                <th scope="col">TODO</th>
-                                <th scope="col">TODO</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr class="d-flex">
-                                <th scope="row" class="col-1 align-middle"><span class="align-middle"></span></th>
-                                <td class="col-4 m-0 p-0">
-                                    <img src="https://i.ytimg.com/vi/az2Q7pjClYM/default.jpg" class="mw-100"
-                                         alt="PLACE_HOLDER_IMAGE"></td>
-                                <td class="col-7 pl-1"><span class="text-left">PLACE_HOLDER</span></td>
-                            </tr>
-                            </tbody>
-                        </table>
-                        </div>
+<!--                        <div class="table-responsive">-->
+<!--                        <table class="table table-hover m-0">-->
+<!--                            <thead>-->
+<!--                            <tr class="d-none">-->
+<!--                                <th scope="col">TODO</th>-->
+<!--                                <th scope="col">TODO</th>-->
+<!--                                <th scope="col">TODO</th>-->
+<!--                            </tr>-->
+<!--                            </thead>-->
+<!--                            <tbody>-->
+<!--                            <tr class="d-flex">-->
+<!--                                <th scope="row" class="col-1 align-middle"><span class="align-middle"></span></th>-->
+<!--                                <td class="col-4 m-0 p-0">-->
+<!--                                    <img src="https://i.ytimg.com/vi/az2Q7pjClYM/default.jpg" class="mw-100"-->
+<!--                                         alt="PLACE_HOLDER_IMAGE"></td>-->
+<!--                                <td class="col-7 pl-1"><span class="text-left">PLACE_HOLDER</span></td>-->
+<!--                            </tr>-->
+<!--                            </tbody>-->
+<!--                        </table>-->
+<!--                        </div>-->
                     </div>
                     <div class="col-12 h-15">
                         <hr class="my-1">
@@ -186,6 +185,28 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="playlistSavedAskOp" tabindex="-1" aria-labelledby="playlistSavedAskOpLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="playlistSavedAskOpLabel">Saved Playlist Detected</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h5 class="mb-4">Do you want to...</h5>
+                <!-- <div class="ml-4 mb-4">
+                    <p>Load Playlist</p>
+                    <p>Replace active playlist with new playlist</p>
+                </div> -->
+                <button class="btn btn-primary btn-block" onclick="determineSaveProgressAction('load');" data-toggle="modal" data-target="#playlistSavedAskOp">Load Saved Playlist</button>
+                <button class="btn btn-primary btn-block" onclick="determineSaveProgressAction('ignore');" data-toggle="modal" data-target="#playlistSavedAskOp">Ignore Saved Playlist</button>
+                <button class="btn btn-primary btn-block" onclick="determineSaveProgressAction('discard');" data-toggle="modal" data-target="#playlistSavedAskOp">Discard Saved Playlist</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"
         integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
@@ -206,6 +227,7 @@
 <script src="site/static/js/youtube_api.js"></script>
 <script src="site/static/js/main.js"></script>
 <script src="site/static/js/utils.js"></script>
+<script src="site/static/js/playlist_progress.js"></script>
 
 <script>
     if (!getCookie("apiKey"))
