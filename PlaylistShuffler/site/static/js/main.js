@@ -65,3 +65,9 @@ function playNextVideo()
     $("#video-title").text(videoTitle);
     playVideo(videoId);
 }
+
+function repeatThisVideo()
+{
+    let video = playlistItemsCompleted.pop();
+    playlistItemsQueue.push(video);
+}
