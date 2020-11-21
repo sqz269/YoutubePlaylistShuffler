@@ -1,7 +1,7 @@
 function checkAndLoadProgress()
 {
     let savedItems = JSON.parse(localStorage.getItem("savedItems"));
-    if (savedItems !== null || savedItems.length > 0)
+    if (savedItems !== null && savedItems.length > 0)
     {
         $("#playlistSavedAskOp").modal("show");
     }
@@ -28,6 +28,7 @@ function discardSaveProgress()
     localStorage.removeItem("saveMode");
     localStorage.removeItem("playlist");
     localStorage.removeItem("savedItems")
+    toastr["warning"](`Playlist Progress Discarded`,"Progress")
 }
 
 function saveProgress()
@@ -61,6 +62,8 @@ function saveProgress()
     });
 
     localStorage.setItem("savedItems", JSON.stringify(playlistItems))
+
+    toastr["success"](`Playlist Progress Saved`,"Progress")
 }
 
 function loadProgress()
@@ -104,7 +107,7 @@ function loadProgress()
                 })
             });
         }
-
+        toastr["success"](`Playlist Progress Loaded`,"Progress")
         shuffle(playlistItemsQueue);
         playNextVideo();
     }
