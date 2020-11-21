@@ -11,6 +11,8 @@ function getPlaylistIdFromInput()
 
 var playlistItemsCompleted = []
 var playlistItemsQueue = []
+var currentPlaylistId = undefined;
+var isPlaylistMerged = false;
 var player = undefined;
 
 /**
@@ -30,10 +32,17 @@ function playPlaylist(merge=undefined)
 
     if (merge === false)
     {
+        isPlaylistMerged = false;
         console.log("Resetting Queue and Completed Array")
         playlistItemsQueue.length = 0
         playlistItemsCompleted.length = 0
     }
+    else if (merge === true)
+    {
+        isPlaylistMerged = true;
+    }
+
+    currentPlaylistId = playlistId;
 
     fetchAllPlayListData(playlistId, playlistItemsQueue, onAllPlaylistDataFetched);
 
@@ -65,3 +74,15 @@ function playNextVideo()
     $("#video-title").text(videoTitle);
     playVideo(videoId);
 }
+
+function repeatThisVideo()
+{
+    let video = playlistItemsCompleted.pop();
+    playlistItemsQueue.push(video);
+}
+
+window.addEventListener('load', function ()
+{
+    checkAndLoadProgress();
+});
+

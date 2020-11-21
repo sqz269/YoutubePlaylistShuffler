@@ -1,4 +1,4 @@
-function authenticate()
+function authorize()
 {
     try
     {
