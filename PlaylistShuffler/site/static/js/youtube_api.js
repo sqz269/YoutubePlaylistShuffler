@@ -99,6 +99,7 @@ function getPlayListDetails(playlistId, pgToken="", parts = ["snippet"])
  */
 function fetchAllPlayListData(playlistId, playlistItems, callback, pageId="")
 {
+    currentPlaylistId = playlistId;
     getPlayListDetails(playlistId, pageId)
         .then(function (response)
         {
