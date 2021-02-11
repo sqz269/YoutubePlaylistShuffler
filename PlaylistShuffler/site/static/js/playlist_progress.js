@@ -42,7 +42,7 @@ function saveProgress()
     if (playlistItemsCompleted.length > playlistItemsQueue.length)
     {
         // If there is more completed videos, then save the currently queued ones
-        localStorage.setItem("savedMode", "queued");
+        localStorage.setItem("saveMode", "queued");
         svData = playlistItemsQueue;
     }
     else
