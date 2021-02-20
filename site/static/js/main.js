@@ -65,7 +65,6 @@ function playNextVideo()
     let video = playlistItemsQueue.pop();
     playlistItemsCompleted.push(video);
     let videoId = video.snippet.resourceId.videoId;
-    let videoThumbnail = video.snippet.thumbnails.default.url;
     let videoTitle = video.snippet.title;
 
     setCurrentStatusMessage(`Playing ${playlistItemsCompleted.length}/${playlistItemsQueue.length + playlistItemsCompleted.length}`, false);
