@@ -1,88 +1,90 @@
-function getPlaylistIdFromInput()
-{
-    let element = document.getElementById("playlist-input");
-    let playlistId = getQueryParams(element.value, "list");
-    if (playlistId === null || playlistId === undefined)
-    {
-        return element.value;
+"use strict";
+var GoogleAPIHandler = /** @class */ (function () {
+    function GoogleAPIHandler(apiKey, clientId) {
+        if (apiKey === void 0) { apiKey = ""; }
+        if (clientId === void 0) { clientId = ""; }
+        this.apiKey = apiKey;
+        this.clientId = clientId;
     }
-    return playlistId;
-}
-
-var playlistItemsCompleted = []
-var playlistItemsQueue = []
-var currentPlaylistId = undefined;
-var isPlaylistMerged = false;
-var player = undefined;
-
-/**
- *
- * @param merge {boolean}
- */
-function playPlaylist(merge=undefined)
-{
-    console.log("Merge? ", merge);
-    let playlistId = getPlaylistIdFromInput();
-
-    if (merge === undefined && playlistItemsQueue.length)
-    {
-        $("#playlistExistOp").modal("show");
-        return ;
+    GoogleAPIHandler.prototype.loadAuthAPI = function () {
+        gapi.auth2.init({ client_id: this.clientId });
+        gapi.auth2.getAuthInstance().signIn({ scope: "https://www.googleapis.com/auth/youtube.readonly" }).then(function () {
+            console.log("Sign-in suggessfull");
+        }, function (err) {
+            console.log("Error Signing in: " + err);
+        });
+    };
+    GoogleAPIHandler.prototype.loadYoutubeAPI = function () {
+        if (!this.apiKey) {
+            console.log("No API Specificed");
+        }
+        gapi.client.setApiKey(this.apiKey);
+        gapi.client.load("https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest", "v3").then(function () {
+            console.log("Ready");
+        }, function (err) {
+            console.log("Error: " + err);
+        });
+    };
+    return GoogleAPIHandler;
+}());
+var YoutubeAPIHandler = /** @class */ (function () {
+    function YoutubeAPIHandler() {
     }
-
-    if (merge === false)
-    {
-        isPlaylistMerged = false;
-        console.log("Resetting Queue and Completed Array")
-        playlistItemsQueue.length = 0
-        playlistItemsCompleted.length = 0
+    YoutubeAPIHandler.prototype.GetPlaylistDetails = function (playlistId, pageToken, parts) {
+        if (pageToken === void 0) { pageToken = ""; }
+        if (parts === void 0) { parts = ["snippet"]; }
+        return gapi.client.youtube.playlistItems.list({
+            "part": parts,
+            "maxResults": 50,
+            "pageToken": pageToken,
+            "playlistId": playlistId
+        });
+    };
+    YoutubeAPIHandler.prototype.FetchPlaylistItems = function (playlistId, callback) {
+        var fetchedItems = [];
+        var respPageId;
+        while (respPageId !== "") {
+            this.GetPlaylistDetails(playlistId, respPageId).then(function (resp) {
+                respPageId = resp.result.nextPageToken;
+                if (!resp.result.items) {
+                    console.log("No Items in the result set??");
+                }
+                else {
+                    fetchedItems.push.apply(fetchedItems, resp.result.items);
+                }
+            }, function (err) {
+                console.error("Error fetching playlist: " + err);
+            });
+        }
+        callback(fetchedItems);
+    };
+    return YoutubeAPIHandler;
+}());
+var YoutubePlayerAPIHandler = /** @class */ (function () {
+    function YoutubePlayerAPIHandler(onPlayerStateChangeCallback) {
+        this.onPlayerStateChangeCallback = onPlayerStateChangeCallback;
     }
-    else if (merge === true)
-    {
-        isPlaylistMerged = true;
-    }
-
-    currentPlaylistId = playlistId;
-
-    fetchAllPlayListData(playlistId, playlistItemsQueue, onAllPlaylistDataFetched);
-
-    /**
-     *
-     * @param data {Object[]}
-     */
-    function onAllPlaylistDataFetched(data)
-    {
-        console.log("Shuffling playlist");
-        setCurrentStatusMessage("Shuffling Playlist", true);
-        shuffle(data);
-        setCurrentStatusMessage("Waiting for player", true);
-        playNextVideo();
-    }
-}
-
-function playNextVideo()
-{
-    let video = playlistItemsQueue.pop();
-    playlistItemsCompleted.push(video);
-    let videoId = video.snippet.resourceId.videoId;
-    let videoThumbnail = video.snippet.thumbnails.default.url;
-    let videoTitle = video.snippet.title;
-
-    setCurrentStatusMessage(`Playing ${playlistItemsCompleted.length}/${playlistItemsQueue.length + playlistItemsCompleted.length}`, false);
-
-    document.title = videoTitle;
-    $("#video-title").text(videoTitle);
-    playVideo(videoId);
-}
-
-function repeatThisVideo()
-{
-    let video = playlistItemsCompleted.pop();
-    playlistItemsQueue.push(video);
-}
-
-window.addEventListener('load', function ()
-{
-    checkAndLoadProgress();
-});
-
+    YoutubePlayerAPIHandler.prototype.onPlayerReady = function (event) {
+        event.target.playVideo();
+    };
+    YoutubePlayerAPIHandler.prototype.onPlayerStateChange = function (event) {
+        this.onPlayerStateChangeCallback(event);
+    };
+    YoutubePlayerAPIHandler.prototype.PlayVideo = function (videoId) {
+        if (this.player === undefined) {
+            this.player = new YT.Player('player', {
+                videoId: videoId,
+                events: {
+                    'onReady': this.onPlayerReady,
+                    'onStateChange': this.onPlayerStateChange
+                }
+            });
+        }
+        else {
+            this.player.loadVideoById(videoId);
+        }
+    };
+    YoutubePlayerAPIHandler.prototype.InitIframe = function () {
+    };
+    return YoutubePlayerAPIHandler;
+}());
