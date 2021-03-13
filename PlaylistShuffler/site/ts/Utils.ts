@@ -1,6 +1,6 @@
 module Utils
 {
-    export function getQueryParams(qs: string, name: string)
+    export function GetQueryParams(qs: string, name: string)
     {
         try
         {
@@ -12,7 +12,7 @@ module Utils
         }
     }
     
-    export function setCurrentStatusMessage(message: string, enableSpinner: boolean)
+    export function SetCurrentStatusMessage(message: string, enableSpinner: boolean)
     {
         document.getElementById("status-message")!.innerText = message;
     
@@ -28,36 +28,26 @@ module Utils
         }
     }
     
-    export function getCookie(name: string)
+    export function GetCookie(name: string)
     {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop()?.split(';').shift();
     }
     
-    export function setCookie(name: string, value: string)
+    export function SetCookie(name: string, value: string)
     {
         document.cookie = `${name}=${value}; expires=Fri, 31 Dec 2037 23:59:59 GMT`;
     }
     
-    export function shuffle(array: any[])
+    export function Shuffle(arr: any[])
     {
-        var currentIndex = array.length, temporaryValue, randomIndex;
-    
-        // While there remain elements to shuffle...
-        while (0 !== currentIndex)
-        {
-    
-            // Pick a remaining element...
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex -= 1;
-    
-            // And swap it with the current element.
-            temporaryValue = array[currentIndex];
-            array[currentIndex] = array[randomIndex];
-            array[randomIndex] = temporaryValue;
+        let i = arr.length, j, temp;
+        while(--i > 0){
+          j = Math.floor(Math.random()*(i+1));
+          temp = arr[j];
+          arr[j] = arr[i];
+          arr[i] = temp;
         }
-    
-        return array;
     }
 }

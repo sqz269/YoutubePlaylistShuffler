@@ -9,13 +9,10 @@
             </div>
             <div class="modal-body">
                 <h5 class="mb-4">Do you want to...</h5>
-                <!-- <div class="ml-4 mb-4">
-                    <p>Load Playlist</p>
-                    <p>Replace active playlist with new playlist</p>
-                </div> -->
-                <button class="btn btn-primary btn-block" onclick="determineSaveProgressAction('load');" data-toggle="modal" data-target="#playlistSavedAskOp">Load Saved Playlist</button>
-                <button class="btn btn-primary btn-block" onclick="determineSaveProgressAction('ignore');" data-toggle="modal" data-target="#playlistSavedAskOp">Ignore Saved Playlist</button>
-                <button class="btn btn-primary btn-block" onclick="determineSaveProgressAction('discard');" data-toggle="modal" data-target="#playlistSavedAskOp">Discard Saved Playlist</button>
+                <hr class="my-3">
+                <button id="saved-load" class="btn btn-primary btn-block" data-toggle="modal" data-target="#playlistSavedAskOp">Load</button>
+                <button id="saved-ignore" class="btn btn-primary btn-block" data-toggle="modal" data-target="#playlistSavedAskOp">Ignore</button>
+                <button id="saved-discard" class="btn btn-danger btn-block" data-toggle="modal" data-target="#playlistSavedAskOp">Discard</button>
             </div>
         </div>
     </div>

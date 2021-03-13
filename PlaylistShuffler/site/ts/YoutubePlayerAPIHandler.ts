@@ -10,26 +10,23 @@ class YoutubePlayerAPIHandler {
         this.onPlayerReadyCallback = onPlayerReadyCallback;
     }
 
-    private onPlayerReady(event: YT.PlayerEvent)
-    {
-        this.onPlayerReadyCallback(event);
-    }
-    
-    private onPlayerStateChange(event: YT.PlayerEvent)
-    {
-        this.onPlayerStateChangeCallback(event);
-    }
-
     public PlayVideo(videoId: string)
     {
+        var that = this;
         if (this.player === undefined)
         {
             this.player = new YT.Player('player',
             {
                 videoId: videoId,
                 events: {
-                    'onReady': this.onPlayerReady,
-                    'onStateChange': this.onPlayerStateChange
+                    'onReady': function(event)
+                    {
+                        that.onPlayerReadyCallback(event);
+                    },
+                    'onStateChange': function(event)
+                    {
+                        that.onPlayerStateChangeCallback(event);
+                    }
                 }
             })
         }

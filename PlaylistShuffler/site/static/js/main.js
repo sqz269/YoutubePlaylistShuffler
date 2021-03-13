@@ -23,7 +23,7 @@ var GoogleAPIHandler = /** @class */ (function () {
             that.auth = auth;
         }, function (reason) {
             that.isAuthAPIReady = false;
-            toastr.warning("ERROR: \n" + reason.details, "Auth API");
+            toastr.warning("ERROR: " + reason.details, "Auth API");
             console.error("Failed to load Auth API: " + reason.details);
         });
     };
@@ -46,19 +46,19 @@ var GoogleAPIHandler = /** @class */ (function () {
     GoogleAPIHandler.prototype.LoadYoutubeAPI = function () {
         if (!this.apiKey) {
             console.log("No API Key Specificed");
-            Utils.setCurrentStatusMessage("ERROR: No API Key Specificed", false);
+            Utils.SetCurrentStatusMessage("ERROR: No API Key Specificed", false);
             toastr.error("Error: No API Key Specificed. Please Supply an API Key in Advanced Settings", "Initialize");
         }
         var that = this;
         gapi.client.setApiKey(this.apiKey);
-        Utils.setCurrentStatusMessage("Loading API", true);
+        Utils.SetCurrentStatusMessage("Loading API", true);
         gapi.client.load("https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest", "v3").then(function () {
             that.isYoutubeDataAPIReady = true;
-            Utils.setCurrentStatusMessage("Ready", false);
+            Utils.SetCurrentStatusMessage("Ready", false);
             console.log("Youtube Data API Ready");
         }, function (reason) {
             that.isYoutubeDataAPIReady = false;
-            Utils.setCurrentStatusMessage("API ERROR: " + reason.error.message, false);
+            Utils.SetCurrentStatusMessage("API ERROR: " + reason.error.message, false);
             toastr.error("Failed to Load Youtube API. " + reason.error.message, "Youtube API");
             console.error("Failed to load API, Reason: " + reason.error.message);
         });
@@ -67,63 +67,107 @@ var GoogleAPIHandler = /** @class */ (function () {
 }());
 var shuffler;
 function main() {
-    var apiKey = Utils.getCookie("APIKey");
-    var clientId = Utils.getCookie("ClientId");
+    var apiKey = Utils.GetCookie("APIKey");
+    var clientId = Utils.GetCookie("ClientId");
     shuffler = new YoutubePlaylistShuffler(apiKey, clientId);
 }
 window.onload = function () {
     gapi.load("client:auth2", main);
 };
-var YoutubePlaylistShuffler = /** @class */ (function () {
-    function YoutubePlaylistShuffler(apiKey, clientId) {
-        this.isYoutubePlayerReady = false;
-        this.SetToastrOption();
-        this.googleAPIHandler = new GoogleAPIHandler(apiKey, clientId);
-        if (!apiKey) {
-            console.log("WARNING: NO YOUTUBE DATA API KEY SPECIFIED");
-        }
-        else {
-            this.googleAPIHandler.LoadYoutubeAPI();
-        }
-        if (!clientId) {
-            console.log("WARNING: NO CLIENT ID SPECIFIED");
-        }
-        else {
-            this.googleAPIHandler.LoadAuthAPI();
-        }
-        this.youtubePlayerHandler = new YoutubePlayerAPIHandler(this.onYoutubePlayerStateChange, this.onYoutubePlayerReady);
-        this.youtubePlayerHandler.Init();
+var ProgressHandler = /** @class */ (function () {
+    function ProgressHandler() {
     }
-    YoutubePlaylistShuffler.prototype.SetToastrOption = function () {
+    ProgressHandler.prototype.GetSavedProgress = function () {
+    };
+    ProgressHandler.prototype.SaveProgrss = function () {
+    };
+    return ProgressHandler;
+}());
+var Interaction;
+(function (Interaction) {
+    var PlaylistPlayAction;
+    (function (PlaylistPlayAction) {
+        PlaylistPlayAction[PlaylistPlayAction["NORMAL"] = 0] = "NORMAL";
+        PlaylistPlayAction[PlaylistPlayAction["MERGE"] = 1] = "MERGE";
+        PlaylistPlayAction[PlaylistPlayAction["REPLACE"] = 2] = "REPLACE";
+    })(PlaylistPlayAction = Interaction.PlaylistPlayAction || (Interaction.PlaylistPlayAction = {}));
+    var VideoOperation;
+    (function (VideoOperation) {
+        VideoOperation[VideoOperation["NEXT"] = 0] = "NEXT";
+        VideoOperation[VideoOperation["REPEAT"] = 1] = "REPEAT";
+    })(VideoOperation = Interaction.VideoOperation || (Interaction.VideoOperation = {}));
+    var SaveOperation;
+    (function (SaveOperation) {
+        SaveOperation[SaveOperation["SAVE"] = 0] = "SAVE";
+        SaveOperation[SaveOperation["DISCARD"] = 1] = "DISCARD";
+        SaveOperation[SaveOperation["IGNORE"] = 2] = "IGNORE";
+        SaveOperation[SaveOperation["LOAD"] = 3] = "LOAD";
+    })(SaveOperation = Interaction.SaveOperation || (Interaction.SaveOperation = {}));
+})(Interaction || (Interaction = {}));
+var UIManager = /** @class */ (function () {
+    function UIManager(onPlaylistAction, onVideoAction, onSaveAction) {
+        this.onPlaylistAction = onPlaylistAction;
+        this.onVideoAction = onVideoAction;
+        this.onSaveAction = onSaveAction;
+        this.SetToastrOption();
+    }
+    UIManager.prototype.SetToastrOption = function () {
         toastr.options.timeOut = 10000;
         toastr.options.extendedTimeOut = 3000;
         toastr.options.progressBar = true;
     };
-    YoutubePlaylistShuffler.prototype.onYoutubePlayerReady = function (event) {
-        console.log("PLAYER READY;");
-        this.isYoutubePlayerReady = true;
+    UIManager.prototype.BindElements = function () {
+        this.BindPlaylistOpElements();
+        this.BindSaveOpElements();
+        this.BindVideoOpElements();
     };
-    YoutubePlaylistShuffler.prototype.onYoutubePlayerStateChange = function (event) {
-        console.log("PLAYER STATE CHANGED");
+    UIManager.prototype.BindPlaylistOpElements = function () {
+        var that = this;
+        $("#play-playlist").on("click", function (event) {
+            var data = $("#playlist-input").val();
+            that.onPlaylistAction(Interaction.PlaylistPlayAction.NORMAL, data);
+        });
+        $("#playlist-op-replace").on("click", function (event) {
+            var data = $("#playlist-input").val();
+            that.onPlaylistAction(Interaction.PlaylistPlayAction.REPLACE, data);
+        });
+        $("#playlist-op-merge").on("click", function (event) {
+            var data = $("#playlist-input").val();
+            that.onPlaylistAction(Interaction.PlaylistPlayAction.MERGE, data);
+        });
     };
-    return YoutubePlaylistShuffler;
-}());
-var UIManager = /** @class */ (function () {
-    function UIManager() {
-    }
-    UIManager.prototype.AuthAPIReadyStateChanged = function (readyState) {
+    UIManager.prototype.BindVideoOpElements = function () {
+        var that = this;
+        $("#video-repeat").on("click", function (event) {
+            that.onVideoAction(Interaction.VideoOperation.REPEAT, undefined);
+        });
+        $("#video-next").on("click", function (event) {
+            that.onVideoAction(Interaction.VideoOperation.NEXT, undefined);
+        });
     };
-    UIManager.prototype.YoutubeDataAPIReadyStateChanged = function (readyState) {
+    UIManager.prototype.BindSaveOpElements = function () {
+        var that = this;
+        $("#save-progress").on("click", function (event) {
+            that.onSaveAction(Interaction.SaveOperation.SAVE, undefined);
+        });
+        $("#saved-load").on("click", function (event) {
+            that.onSaveAction(Interaction.SaveOperation.LOAD, undefined);
+        });
+        $("#saved-ignore").on("click", function (event) {
+            that.onSaveAction(Interaction.SaveOperation.IGNORE, undefined);
+        });
+        $("#saved-discard").on("click", function (event) {
+            that.onSaveAction(Interaction.SaveOperation.DISCARD, undefined);
+        });
     };
-    UIManager.GetInstance = function () {
-        // Do you need arguments? Make it a regular static method instead.
-        return this._instance || (this._instance = new this());
+    UIManager.prototype.ShowActivePlaylistOpModal = function () {
+        $("#playlistExistOp").show();
     };
     return UIManager;
 }());
 var Utils;
 (function (Utils) {
-    function getQueryParams(qs, name) {
+    function GetQueryParams(qs, name) {
         try {
             var url = new URL(qs);
             return url.searchParams.get(name);
@@ -132,8 +176,8 @@ var Utils;
             return null;
         }
     }
-    Utils.getQueryParams = getQueryParams;
-    function setCurrentStatusMessage(message, enableSpinner) {
+    Utils.GetQueryParams = GetQueryParams;
+    function SetCurrentStatusMessage(message, enableSpinner) {
         document.getElementById("status-message").innerText = message;
         var spinElement = $("#status-spin");
         if (enableSpinner) {
@@ -145,34 +189,29 @@ var Utils;
                 spinElement.addClass("d-none");
         }
     }
-    Utils.setCurrentStatusMessage = setCurrentStatusMessage;
-    function getCookie(name) {
+    Utils.SetCurrentStatusMessage = SetCurrentStatusMessage;
+    function GetCookie(name) {
         var _a;
         var value = "; " + document.cookie;
         var parts = value.split("; " + name + "=");
         if (parts.length === 2)
             return (_a = parts.pop()) === null || _a === void 0 ? void 0 : _a.split(';').shift();
     }
-    Utils.getCookie = getCookie;
-    function setCookie(name, value) {
+    Utils.GetCookie = GetCookie;
+    function SetCookie(name, value) {
         document.cookie = name + "=" + value + "; expires=Fri, 31 Dec 2037 23:59:59 GMT";
     }
-    Utils.setCookie = setCookie;
-    function shuffle(array) {
-        var currentIndex = array.length, temporaryValue, randomIndex;
-        // While there remain elements to shuffle...
-        while (0 !== currentIndex) {
-            // Pick a remaining element...
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex -= 1;
-            // And swap it with the current element.
-            temporaryValue = array[currentIndex];
-            array[currentIndex] = array[randomIndex];
-            array[randomIndex] = temporaryValue;
+    Utils.SetCookie = SetCookie;
+    function Shuffle(arr) {
+        var i = arr.length, j, temp;
+        while (--i > 0) {
+            j = Math.floor(Math.random() * (i + 1));
+            temp = arr[j];
+            arr[j] = arr[i];
+            arr[i] = temp;
         }
-        return array;
     }
-    Utils.shuffle = shuffle;
+    Utils.Shuffle = Shuffle;
 })(Utils || (Utils = {}));
 var YoutubeDataAPIHandler = /** @class */ (function () {
     function YoutubeDataAPIHandler() {
@@ -187,23 +226,33 @@ var YoutubeDataAPIHandler = /** @class */ (function () {
             "playlistId": playlistId
         });
     };
-    YoutubeDataAPIHandler.prototype.FetchPlaylistItems = function (playlistId, callback) {
-        var fetchedItems = [];
-        var respPageId;
-        while (respPageId !== "") {
-            this.GetPlaylistDetails(playlistId, respPageId).then(function (resp) {
-                respPageId = resp.result.nextPageToken;
-                if (!resp.result.items) {
-                    console.log("No Items in the result set??");
-                }
-                else {
-                    fetchedItems.push.apply(fetchedItems, resp.result.items);
-                }
-            }, function (err) {
-                console.error("Error fetching playlist: " + err);
-            });
-        }
-        callback(fetchedItems);
+    YoutubeDataAPIHandler.prototype.FetchPlaylistItems = function (playlistId, callback, fetchedItems, pageId) {
+        // let fetchedItems: gapi.client.youtube.PlaylistItem[] = [];
+        // let respPageId: (string | undefined);
+        if (fetchedItems === void 0) { fetchedItems = []; }
+        if (pageId === void 0) { pageId = undefined; }
+        var that = this;
+        this.GetPlaylistDetails(playlistId, pageId).then(function (resp) {
+            var _a, _b;
+            pageId = resp.result.nextPageToken;
+            if (!resp.result.items) {
+                console.log("No Items in the result set??");
+            }
+            else {
+                fetchedItems.push.apply(fetchedItems, resp.result.items);
+            }
+            console.log("Fetching Playlist " + fetchedItems.length + "/" + ((_a = resp.result.pageInfo) === null || _a === void 0 ? void 0 : _a.totalResults));
+            Utils.SetCurrentStatusMessage("Fetching Playlist " + fetchedItems.length + "/" + ((_b = resp.result.pageInfo) === null || _b === void 0 ? void 0 : _b.totalResults), true);
+            if (pageId) {
+                that.FetchPlaylistItems(playlistId, callback, fetchedItems, pageId);
+            }
+            else {
+                callback(fetchedItems);
+            }
+        }, function (err) {
+            console.error("Error fetching playlist: " + err.result.error.message);
+            toastr.error("ERROR: " + err.result.error.message, "Playlist");
+        });
     };
     return YoutubeDataAPIHandler;
 }());
@@ -212,19 +261,18 @@ var YoutubePlayerAPIHandler = /** @class */ (function () {
         this.onPlayerStateChangeCallback = onPlayerStateChangeCallback;
         this.onPlayerReadyCallback = onPlayerReadyCallback;
     }
-    YoutubePlayerAPIHandler.prototype.onPlayerReady = function (event) {
-        this.onPlayerReadyCallback(event);
-    };
-    YoutubePlayerAPIHandler.prototype.onPlayerStateChange = function (event) {
-        this.onPlayerStateChangeCallback(event);
-    };
     YoutubePlayerAPIHandler.prototype.PlayVideo = function (videoId) {
+        var that = this;
         if (this.player === undefined) {
             this.player = new YT.Player('player', {
                 videoId: videoId,
                 events: {
-                    'onReady': this.onPlayerReady,
-                    'onStateChange': this.onPlayerStateChange
+                    'onReady': function (event) {
+                        that.onPlayerReadyCallback(event);
+                    },
+                    'onStateChange': function (event) {
+                        that.onPlayerStateChangeCallback(event);
+                    }
                 }
             });
         }
@@ -240,4 +288,93 @@ var YoutubePlayerAPIHandler = /** @class */ (function () {
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
     };
     return YoutubePlayerAPIHandler;
+}());
+var YoutubePlaylistShuffler = /** @class */ (function () {
+    function YoutubePlaylistShuffler(apiKey, clientId) {
+        this.playlistItemsQueued = [];
+        this.playlistItemsCompleted = [];
+        this.uiManager = new UIManager(this.OnPlaylistPlay, this.OnVideoAction, this.OnSaveOperation);
+        this.uiManager.BindElements();
+        this.googleAPIHandler = new GoogleAPIHandler(apiKey, clientId);
+        this.googleAPIHandler.LoadYoutubeAPI();
+        this.googleAPIHandler.LoadAuthAPI();
+        this.youtubeDataHandler = new YoutubeDataAPIHandler();
+        this.youtubePlayerHandler = new YoutubePlayerAPIHandler(this.onYoutubePlayerStateChange, this.onYoutubePlayerReady);
+        this.youtubePlayerHandler.Init();
+        this.progressHandler = new ProgressHandler();
+    }
+    YoutubePlaylistShuffler.prototype.OnPlaylistPlay = function (type, data) {
+        shuffler.PlayPlaylist(data, type);
+    };
+    YoutubePlaylistShuffler.prototype.OnVideoAction = function (type, data) {
+        switch (type) {
+            case Interaction.VideoOperation.NEXT:
+                shuffler.PlayNextVideo();
+                break;
+            case Interaction.VideoOperation.REPEAT:
+                shuffler.RepeatVideo();
+                break;
+            default:
+                break;
+        }
+    };
+    YoutubePlaylistShuffler.prototype.OnSaveOperation = function (type, data) {
+        switch (type) {
+            case Interaction.SaveOperation.SAVE:
+                break;
+            case Interaction.SaveOperation.LOAD:
+                break;
+            case Interaction.SaveOperation.DISCARD:
+                break;
+            case Interaction.SaveOperation.IGNORE:
+            default:
+                break;
+        }
+    };
+    YoutubePlaylistShuffler.prototype.PlayPlaylist = function (playlist, action) {
+        var playlistId = Utils.GetQueryParams(playlist, "list") || playlist;
+        if (this.playlistItemsQueued.length != 0 && action == Interaction.PlaylistPlayAction.NORMAL) {
+            this.uiManager.ShowActivePlaylistOpModal();
+            return;
+        }
+        var that = this;
+        this.youtubeDataHandler.FetchPlaylistItems(playlistId, function (fetchedItems) {
+            var _a;
+            if (action === Interaction.PlaylistPlayAction.MERGE) {
+                (_a = that.playlistItemsQueued).push.apply(_a, fetchedItems);
+            }
+            else {
+                that.playlistItemsQueued = fetchedItems;
+                // reset completed array
+                that.playlistItemsCompleted.length = 0;
+            }
+            Utils.Shuffle(that.playlistItemsQueued);
+            that.PlayNextVideo();
+        });
+    };
+    YoutubePlaylistShuffler.prototype.PlayNextVideo = function () {
+        var item = this.playlistItemsQueued.pop();
+        if (!item) {
+            console.log("Queued items depleted");
+            return;
+        }
+        this.playlistItemsCompleted.push(item);
+        Utils.SetCurrentStatusMessage("Playing: " + this.playlistItemsCompleted.length + "/" + (this.playlistItemsCompleted.length + this.playlistItemsQueued.length), false);
+        if (item.snippet && item.snippet.resourceId && item.snippet.resourceId.videoId) {
+            this.youtubePlayerHandler.PlayVideo(item.snippet.resourceId.videoId);
+        }
+        else {
+            console.log("ERROR: FAILED TO PLAY VIDEO, VideoId in \"item.snippet.resourceId.videoId\" is undefined or null. " + item);
+        }
+    };
+    YoutubePlaylistShuffler.prototype.RepeatVideo = function () {
+    };
+    YoutubePlaylistShuffler.prototype.onYoutubePlayerReady = function (event) {
+        console.log("PLAYER READY;");
+        event.target.playVideo();
+    };
+    YoutubePlaylistShuffler.prototype.onYoutubePlayerStateChange = function (event) {
+        console.log("PLAYER STATE CHANGED");
+    };
+    return YoutubePlaylistShuffler;
 }());

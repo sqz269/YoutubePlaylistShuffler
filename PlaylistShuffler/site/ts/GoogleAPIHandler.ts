@@ -38,7 +38,7 @@ class GoogleAPIHandler
             function(reason)
             {
                 that.isAuthAPIReady = false;
-                toastr.warning(`ERROR: \n${reason.details}`, "Auth API");
+                toastr.warning(`ERROR: ${reason.details}`, "Auth API");
                 console.error(`Failed to load Auth API: ${reason.details}`);
             }
         );
@@ -76,24 +76,24 @@ class GoogleAPIHandler
         if (!this.apiKey)
         {
             console.log("No API Key Specificed");
-            Utils.setCurrentStatusMessage("ERROR: No API Key Specificed", false);
+            Utils.SetCurrentStatusMessage("ERROR: No API Key Specificed", false);
             toastr.error("Error: No API Key Specificed. Please Supply an API Key in Advanced Settings", "Initialize");
         }
         var that = this;
         gapi.client.setApiKey(this.apiKey);
-        Utils.setCurrentStatusMessage("Loading API", true);
+        Utils.SetCurrentStatusMessage("Loading API", true);
         gapi.client.load("https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest", "v3").then
         (
             function()
             {
                 that.isYoutubeDataAPIReady = true;
-                Utils.setCurrentStatusMessage("Ready", false);
+                Utils.SetCurrentStatusMessage("Ready", false);
                 console.log("Youtube Data API Ready");
             },
             function (reason: any)
             {
                 that.isYoutubeDataAPIReady = false;
-                Utils.setCurrentStatusMessage(`API ERROR: ${reason.error.message}`, false);
+                Utils.SetCurrentStatusMessage(`API ERROR: ${reason.error.message}`, false);
                 toastr.error(`Failed to Load Youtube API. ${reason.error.message}`, "Youtube API");
                 console.error(`Failed to load API, Reason: ${reason.error.message}`);
             }

@@ -2,8 +2,8 @@ let shuffler: YoutubePlaylistShuffler;
 
 function main()
 {
-    let apiKey: (string | undefined) = Utils.getCookie("APIKey");
-    let clientId: (string | undefined) = Utils.getCookie("ClientId");
+    let apiKey: (string | undefined) = Utils.GetCookie("APIKey");
+    let clientId: (string | undefined) = Utils.GetCookie("ClientId");
 
     shuffler = new YoutubePlaylistShuffler(apiKey, clientId);
 }

@@ -14,7 +14,7 @@
     // "declarationMap": true,                      /* Generates a sourcemap for each corresponding '.d.ts' file. */
     // "sourceMap": true,                           /* Generates corresponding '.map' file. */
     "outFile": "./PlaylistShuffler/site/static/js/main.js",  /* Concatenate and emit output to single file. */
-    // "outDir": "./",                              /* Redirect output structure to the directory. */
+    // "outDir": "./PlaylistShuffler/site/static/js/",                              /* Redirect output structure to the directory. */
     "rootDir": "./PlaylistShuffler/site/ts",        /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */
     // "composite": true,                           /* Enable project compilation */
     // "tsBuildInfoFile": "./",                     /* Specify file to store incremental compilation information */

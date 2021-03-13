@@ -12,33 +12,41 @@ class YoutubeDataAPIHandler {
         });
     }
 
-    public FetchPlaylistItems(playlistId: string, callback: Function): void
+    public FetchPlaylistItems(playlistId: string, callback: Function, fetchedItems: gapi.client.youtube.PlaylistItem[]=[], pageId: (string | undefined)=undefined): void
     {
-        let fetchedItems: gapi.client.youtube.PlaylistItem[] = [];
-        let respPageId: (string | undefined);
+        // let fetchedItems: gapi.client.youtube.PlaylistItem[] = [];
+        // let respPageId: (string | undefined);
 
-        while (respPageId !== "")
-        {
-            this.GetPlaylistDetails(playlistId, respPageId).then(
-                function(resp)
+        var that = this;
+        this.GetPlaylistDetails(playlistId, pageId).then(
+            function(resp)
+            {
+                pageId = resp.result.nextPageToken;
+                if (!resp.result.items)
                 {
-                    respPageId = resp.result.nextPageToken;
-                    if (!resp.result.items)
-                    {
-                        console.log("No Items in the result set??");
-                    }
-                    else
-                    {
-                        fetchedItems.push(...resp.result.items);
-                    }
-                },
-                function(err)
-                {
-                    console.error(`Error fetching playlist: ${err}`)
+                    console.log("No Items in the result set??");
                 }
-            )
-        }
+                else
+                {
+                    fetchedItems.push(...resp.result.items);
+                }
+                console.log(`Fetching Playlist ${fetchedItems.length}/${resp.result.pageInfo?.totalResults}`)
+                Utils.SetCurrentStatusMessage(`Fetching Playlist ${fetchedItems.length}/${resp.result.pageInfo?.totalResults}`, true);
 
-        callback(fetchedItems);
+                if (pageId)
+                {
+                    that.FetchPlaylistItems(playlistId, callback, fetchedItems, pageId);
+                }
+                else
+                {
+                    callback(fetchedItems);
+                }
+            },
+            function(err)
+            {
+                console.error(`Error fetching playlist: ${err.result.error.message}`);
+                toastr.error(`ERROR: ${err.result.error.message}`, "Playlist");
+            }
+        )
     }
 }
