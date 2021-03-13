@@ -6,6 +6,8 @@ class GoogleAPIHandler
     isAuthAPIReady: boolean = false;
     isYoutubeDataAPIReady: boolean = false;
 
+    auth: (gapi.auth2.GoogleAuth | undefined);
+
     constructor(apiKey: string="", clientId: string="") 
     {
         this.apiKey = apiKey;
@@ -15,40 +17,57 @@ class GoogleAPIHandler
     public setAPIKey(key: string)
     {
         this.isYoutubeDataAPIReady = false;
+        this.apiKey = key;
     }
 
     public setClientId(id: string)
     {
         this.isAuthAPIReady = false;
-    }
-
-    private AuthAPILoadSuccess()
-    {
-        this.isAuthAPIReady = true;
-    }
-
-    private AuthAPILoadError(reason: any)
-    {
-        this.isAuthAPIReady = false;
-    }
-
-    private YoutubeAPILoadSuccess()
-    {
-        this.isYoutubeDataAPIReady = true;
-    }
-
-    private YoutubeAPILoadError(reason: any)
-    {
-        this.isYoutubeDataAPIReady = false;
+        this.clientId = id;
     }
 
     public LoadAuthAPI()
     {
-        gapi.auth2.init({client_id: this.clientId});
-        gapi.auth2.getAuthInstance().signIn({scope: "https://www.googleapis.com/auth/youtube.readonly"}).then
+        var that = this;
+        gapi.auth2.init({client_id: this.clientId}).then(
+            function(auth: gapi.auth2.GoogleAuth)
+            {
+                that.isAuthAPIReady = true;
+                that.auth = auth;
+            },
+            function(reason)
+            {
+                that.isAuthAPIReady = false;
+                toastr.warning(`ERROR: \n${reason.details}`, "Auth API");
+                console.error(`Failed to load Auth API: ${reason.details}`);
+            }
+        );
+    }
+
+    public Authorize()
+    {
+        if (!this.isAuthAPIReady || !this.auth)
+        {
+            console.error("Unable to open signin window, auth api not loaded. Call LoadAuthAPI before calling Authorize");
+
+            toastr.warning("Warning: No Client Id Specificed, Authorize (Playing Private Playlist) Will be disabled until a valid Client Id is supplied", "Initialize");
+            return;
+        }
+
+        var that = this;
+        this.auth.signIn({scope: "https://www.googleapis.com/auth/youtube.readonly"}).then
         (
-            this.AuthAPILoadSuccess,
-            this.AuthAPILoadError
+            function()
+            {
+                that.isAuthAPIReady = true;
+                toastr.success("Authorization Sucessful", "Sign-In");
+            },
+            function (reason: any)
+            {
+                that.isAuthAPIReady = false;
+                toastr.error(`Error: ${reason.error}`, "Sign-In");
+                console.error(`Error when Signing In, Reason: ${reason.error}`);
+            }
         );
     }
 
@@ -56,14 +75,28 @@ class GoogleAPIHandler
     {
         if (!this.apiKey)
         {
-            console.log("No API Specificed");
+            console.log("No API Key Specificed");
+            Utils.setCurrentStatusMessage("ERROR: No API Key Specificed", false);
+            toastr.error("Error: No API Key Specificed. Please Supply an API Key in Advanced Settings", "Initialize");
         }
-
+        var that = this;
         gapi.client.setApiKey(this.apiKey);
+        Utils.setCurrentStatusMessage("Loading API", true);
         gapi.client.load("https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest", "v3").then
         (
-            this.YoutubeAPILoadSuccess,
-            this.YoutubeAPILoadError
+            function()
+            {
+                that.isYoutubeDataAPIReady = true;
+                Utils.setCurrentStatusMessage("Ready", false);
+                console.log("Youtube Data API Ready");
+            },
+            function (reason: any)
+            {
+                that.isYoutubeDataAPIReady = false;
+                Utils.setCurrentStatusMessage(`API ERROR: ${reason.error.message}`, false);
+                toastr.error(`Failed to Load Youtube API. ${reason.error.message}`, "Youtube API");
+                console.error(`Failed to load API, Reason: ${reason.error.message}`);
+            }
         );
     }
 }

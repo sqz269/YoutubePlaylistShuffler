@@ -5,8 +5,10 @@ class YoutubePlaylistShuffler
 
     isYoutubePlayerReady: boolean = false;
 
-    constructor(apiKey: string, clientId: string)
+    constructor(apiKey?: string, clientId?: string)
     {
+        this.SetToastrOption();
+
         this.googleAPIHandler = new GoogleAPIHandler(apiKey, clientId);
         if (!apiKey)
         {
@@ -27,16 +29,25 @@ class YoutubePlaylistShuffler
         }
 
         this.youtubePlayerHandler = new YoutubePlayerAPIHandler(this.onYoutubePlayerStateChange, this.onYoutubePlayerReady)
-        this.youtubePlayerHandler.InitIframe();
+        this.youtubePlayerHandler.Init();
+    }
+
+    public SetToastrOption()
+    {
+        toastr.options.timeOut = 10000;
+        toastr.options.extendedTimeOut = 3000;
+        toastr.options.progressBar = true;
     }
 
     private onYoutubePlayerReady(event: YT.PlayerEvent)
     {
+        console.log("PLAYER READY;");
         this.isYoutubePlayerReady = true;
+        event.target.playVideo();
     }
 
     private onYoutubePlayerStateChange(event: YT.PlayerEvent)
     {
-        
+        console.log("PLAYER STATE CHANGED");
     }
 }

@@ -1,7 +1,6 @@
 node_modules/
 .vscode/
 github_pages_publish/
-package-lock.json
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
