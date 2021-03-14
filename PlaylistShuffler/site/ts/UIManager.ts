@@ -113,11 +113,11 @@ class UIManager
 
     public ShowActivePlaylistOpModal()
     {
-        $("#playlistExistOp").show();
+        $("#playlistExistOp").modal("show");
     }
 
     public ShowProgressOpModal()
     {
-        $("#playlistSavedAskOp").show();
+        $("#playlistSavedAskOp").modal("show");
     }
 }

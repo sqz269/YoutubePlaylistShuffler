@@ -50,10 +50,19 @@ class YoutubePlaylistShuffler
     {
         switch (type) {
             case Interaction.SaveOperation.SAVE:
+                shuffler.progressHandler.SaveProgrss(shuffler.playlistItemsCompleted, shuffler.playlistItemsQueued);
                 break;
             case Interaction.SaveOperation.LOAD:
+                var that = this;
+                shuffler.progressHandler.GetSavedProgress(function(data)
+                {
+                    that.playlistItemsCompleted = data.completed;
+                    that.playlistItemsQueued = data.queued;
+                    that.PlayNextVideo();
+                });
                 break;
             case Interaction.SaveOperation.DISCARD:
+                shuffler.progressHandler.DiscardProgress();
                 break;
             case Interaction.SaveOperation.IGNORE:
             default:

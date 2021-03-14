@@ -25,55 +25,74 @@ class ProgressHandler {
         this.youtubeDataAPI = new YoutubeDataAPIHandler();
     }
 
-    public GetSavedProgress()
+    public GetSavedProgress(callback: (data: {completed : gapi.client.youtube.PlaylistItem[], 
+                                               queued: gapi.client.youtube.PlaylistItem[]}) => any)
     {
         let savedProgress: string | null = localStorage.getItem("savedProgress");
         if (!savedProgress)
         {
             return null;
         }
-
         let saved: SavedProgress = JSON.parse(savedProgress);
 
         var fetchedItems: FetchedItems[] = [];
 
-        // Because saved.data stores value in {playlistId: positions[]}, element is alreay playlistId
-        Object.keys(saved.data).forEach((element: string) => 
+        var fetchTargets = Object.keys(saved.data);
+        var fetchIteration = 0;
+        var targetIteration = fetchTargets.length;
+        var that = this;
+
+        function ProcessFetchedItems()
         {
-            this.youtubeDataAPI.FetchPlaylistItems(element, function(data: gapi.client.youtube.PlaylistItem[])
+            var playlistCompleted: gapi.client.youtube.PlaylistItem[] = [];
+            var playlistQueued: gapi.client.youtube.PlaylistItem[] = [];
+            // Completed means the SaveData.itmes stores list of video positions that has been played
+            
+            fetchedItems.forEach(element => 
+            {
+                // Performace increase? Maybe
+                let items: Set<number> = new Set(saved.data[element.playlistId]);
+    
+                element.items.forEach(e =>
+                {
+                    // Short Circuit Evaulation
+                    if (e.snippet && e.snippet.position && items.has(e.snippet.position))
+                    {
+                        let _ = saved.type === SaveType.Completed ? playlistCompleted.push(e) : playlistQueued.push(e);
+                    }
+                    else
+                    {
+                        let _ = saved.type === SaveType.Completed ? playlistQueued.push(e) : playlistCompleted.push(e);
+                    }
+                });
+            });
+            callback({"completed": playlistCompleted, "queued": playlistQueued});
+        }
+
+        // Because saved.data stores value in {playlistId: positions[]}, element is alreay playlistId
+        function FetchItems()
+        {
+            let target = fetchTargets[fetchIteration];
+            that.youtubeDataAPI.FetchPlaylistItems(target, function(data: gapi.client.youtube.PlaylistItem[])
             {
                 var item: FetchedItems = {
-                    "playlistId": element,
+                    "playlistId": target,
                     "items": data
                 };
                 fetchedItems.push(item);
-            });
-        })
-
-        var playlistCompleted: gapi.client.youtube.PlaylistItem[] = [];
-        var playlistQueued: gapi.client.youtube.PlaylistItem[] = [];
-        // Completed means the SaveData.itmes stores list of video positions that has been played
-        
-        fetchedItems.forEach(element => 
-        {
-            // Performace increase? Maybe
-            let items: Set<number> = new Set(saved.data[element.playlistId]);
-
-            element.items.forEach(e =>
-            {
-                // Short Circuit Evaulation
-                if (e.snippet && e.snippet.position && items.has(e.snippet.position))
+                fetchIteration++;
+                if (fetchIteration === targetIteration)
                 {
-                    let _ = saved.type === SaveType.Completed ? playlistCompleted.push(e) : playlistQueued.push(e);
+                    ProcessFetchedItems();
                 }
                 else
                 {
-                    let _ = saved.type === SaveType.Completed ? playlistQueued.push(e) : playlistCompleted.push(e);
+                    FetchItems();
                 }
             });
-        });
+        }
 
-        return {"completed": playlistCompleted, "queued": playlistQueued};
+        FetchItems();
     }
 
     public SaveProgrss(playlistCompleted: gapi.client.youtube.PlaylistItem[],
@@ -83,17 +102,32 @@ class ProgressHandler {
         
         let data: { [playlistId: string]: number[] } = {};
 
-        let saveData = saveType === SaveType.Completed ? playlistCompleted : playlistQueued;
+        let saveList = saveType === SaveType.Completed ? playlistCompleted : playlistQueued;
 
-        playlistCompleted.forEach(element =>
+        saveList.forEach(element =>
         {
-            if (element?.snippet?.resourceId?.videoId)
+            if (element?.snippet?.playlistId && element?.snippet?.position)
             {
-                // if ()
-                data[element?.snippet?.resourceId?.videoId]
+                let playlistId = element.snippet.playlistId;
+                let videoPosition = element.snippet.position;
+
+                if (data[playlistId] === undefined)
+                {
+                    data[playlistId] = [videoPosition];
+                }
+                else
+                {
+                    data[playlistId].push(videoPosition);
+                }
             }
         });
 
+        let saveData: SavedProgress = {
+            "type": saveType,
+            "data": data
+        }
+
+        localStorage.setItem("savedProgress", JSON.stringify(saveData));
     }
 
     public DiscardProgress()

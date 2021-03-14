@@ -80,43 +80,78 @@ class ProgressHandler {
     constructor() {
         this.youtubeDataAPI = new YoutubeDataAPIHandler();
     }
-    GetSavedProgress() {
+    GetSavedProgress(callback) {
         let savedProgress = localStorage.getItem("savedProgress");
         if (!savedProgress) {
             return null;
         }
         let saved = JSON.parse(savedProgress);
         var fetchedItems = [];
+        var fetchTargets = Object.keys(saved.data);
+        var fetchIteration = 0;
+        var targetIteration = fetchTargets.length;
+        var that = this;
+        function ProcessFetchedItems() {
+            var playlistCompleted = [];
+            var playlistQueued = [];
+            // Completed means the SaveData.itmes stores list of video positions that has been played
+            fetchedItems.forEach(element => {
+                // Performace increase? Maybe
+                let items = new Set(saved.data[element.playlistId]);
+                element.items.forEach(e => {
+                    // Short Circuit Evaulation
+                    if (e.snippet && e.snippet.position && items.has(e.snippet.position)) {
+                        let _ = saved.type === SaveType.Completed ? playlistCompleted.push(e) : playlistQueued.push(e);
+                    }
+                    else {
+                        let _ = saved.type === SaveType.Completed ? playlistQueued.push(e) : playlistCompleted.push(e);
+                    }
+                });
+            });
+            callback({ "completed": playlistCompleted, "queued": playlistQueued });
+        }
         // Because saved.data stores value in {playlistId: positions[]}, element is alreay playlistId
-        Object.keys(saved.data).forEach((element) => {
-            this.youtubeDataAPI.FetchPlaylistItems(element, function (data) {
+        function FetchItems() {
+            let target = fetchTargets[fetchIteration];
+            that.youtubeDataAPI.FetchPlaylistItems(target, function (data) {
                 var item = {
-                    "playlistId": element,
+                    "playlistId": target,
                     "items": data
                 };
                 fetchedItems.push(item);
-            });
-        });
-        var playlistCompleted = [];
-        var playlistQueued = [];
-        // Completed means the SaveData.itmes stores list of video positions that has been played
-        fetchedItems.forEach(element => {
-            // Performace increase? Maybe
-            let items = new Set(saved.data[element.playlistId]);
-            element.items.forEach(e => {
-                // Short Circuit Evaulation
-                if (e.snippet && e.snippet.position && items.has(e.snippet.position)) {
-                    let _ = saved.type === SaveType.Completed ? playlistCompleted.push(e) : playlistQueued.push(e);
+                fetchIteration++;
+                if (fetchIteration === targetIteration) {
+                    ProcessFetchedItems();
                 }
                 else {
-                    let _ = saved.type === SaveType.Completed ? playlistQueued.push(e) : playlistCompleted.push(e);
+                    FetchItems();
                 }
             });
-        });
-        return { "completed": playlistCompleted, "queued": playlistQueued };
+        }
+        FetchItems();
     }
     SaveProgrss(playlistCompleted, playlistQueued) {
         let saveType = playlistCompleted.length < playlistQueued.length ? SaveType.Completed : SaveType.Queued;
+        let data = {};
+        let saveList = saveType === SaveType.Completed ? playlistCompleted : playlistQueued;
+        saveList.forEach(element => {
+            var _a, _b;
+            if (((_a = element === null || element === void 0 ? void 0 : element.snippet) === null || _a === void 0 ? void 0 : _a.playlistId) && ((_b = element === null || element === void 0 ? void 0 : element.snippet) === null || _b === void 0 ? void 0 : _b.position)) {
+                let playlistId = element.snippet.playlistId;
+                let videoPosition = element.snippet.position;
+                if (data[playlistId] === undefined) {
+                    data[playlistId] = [videoPosition];
+                }
+                else {
+                    data[playlistId].push(videoPosition);
+                }
+            }
+        });
+        let saveData = {
+            "type": saveType,
+            "data": data
+        };
+        localStorage.setItem("savedProgress", JSON.stringify(saveData));
     }
     DiscardProgress() {
         var discard = true;
@@ -217,10 +252,10 @@ class UIManager {
         });
     }
     ShowActivePlaylistOpModal() {
-        $("#playlistExistOp").show();
+        $("#playlistExistOp").modal("show");
     }
     ShowProgressOpModal() {
-        $("#playlistSavedAskOp").show();
+        $("#playlistSavedAskOp").modal("show");
     }
 }
 var Utils;
@@ -371,10 +406,18 @@ class YoutubePlaylistShuffler {
     OnSaveOperation(type, data) {
         switch (type) {
             case Interaction.SaveOperation.SAVE:
+                shuffler.progressHandler.SaveProgrss(shuffler.playlistItemsCompleted, shuffler.playlistItemsQueued);
                 break;
             case Interaction.SaveOperation.LOAD:
+                var that = this;
+                shuffler.progressHandler.GetSavedProgress(function (data) {
+                    that.playlistItemsCompleted = data.completed;
+                    that.playlistItemsQueued = data.queued;
+                    that.PlayNextVideo();
+                });
                 break;
             case Interaction.SaveOperation.DISCARD:
+                shuffler.progressHandler.DiscardProgress();
                 break;
             case Interaction.SaveOperation.IGNORE:
             default:
