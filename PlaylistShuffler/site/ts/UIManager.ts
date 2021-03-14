@@ -97,7 +97,6 @@ class UIManager
         {
             that.onSaveAction(Interaction.SaveOperation.SAVE, undefined);
         })
-
         $("#saved-load").on("click", function(event)
         {
             that.onSaveAction(Interaction.SaveOperation.LOAD, undefined);
@@ -115,5 +114,10 @@ class UIManager
     public ShowActivePlaylistOpModal()
     {
         $("#playlistExistOp").show();
+    }
+
+    public ShowProgressOpModal()
+    {
+        $("#playlistSavedAskOp").show();
     }
 }

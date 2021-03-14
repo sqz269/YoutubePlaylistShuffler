@@ -1,33 +1,31 @@
 "use strict";
-var GoogleAPIHandler = /** @class */ (function () {
-    function GoogleAPIHandler(apiKey, clientId) {
-        if (apiKey === void 0) { apiKey = ""; }
-        if (clientId === void 0) { clientId = ""; }
+class GoogleAPIHandler {
+    constructor(apiKey = "", clientId = "") {
         this.isAuthAPIReady = false;
         this.isYoutubeDataAPIReady = false;
         this.apiKey = apiKey;
         this.clientId = clientId;
     }
-    GoogleAPIHandler.prototype.setAPIKey = function (key) {
+    setAPIKey(key) {
         this.isYoutubeDataAPIReady = false;
         this.apiKey = key;
-    };
-    GoogleAPIHandler.prototype.setClientId = function (id) {
+    }
+    setClientId(id) {
         this.isAuthAPIReady = false;
         this.clientId = id;
-    };
-    GoogleAPIHandler.prototype.LoadAuthAPI = function () {
+    }
+    LoadAuthAPI() {
         var that = this;
         gapi.auth2.init({ client_id: this.clientId }).then(function (auth) {
             that.isAuthAPIReady = true;
             that.auth = auth;
         }, function (reason) {
             that.isAuthAPIReady = false;
-            toastr.warning("ERROR: " + reason.details, "Auth API");
-            console.error("Failed to load Auth API: " + reason.details);
+            toastr.warning(`ERROR: ${reason.details}`, "Auth API");
+            console.error(`Failed to load Auth API: ${reason.details}`);
         });
-    };
-    GoogleAPIHandler.prototype.Authorize = function () {
+    }
+    Authorize() {
         if (!this.isAuthAPIReady || !this.auth) {
             console.error("Unable to open signin window, auth api not loaded. Call LoadAuthAPI before calling Authorize");
             toastr.warning("Warning: No Client Id Specificed, Authorize (Playing Private Playlist) Will be disabled until a valid Client Id is supplied", "Initialize");
@@ -39,11 +37,11 @@ var GoogleAPIHandler = /** @class */ (function () {
             toastr.success("Authorization Sucessful", "Sign-In");
         }, function (reason) {
             that.isAuthAPIReady = false;
-            toastr.error("Error: " + reason.error, "Sign-In");
-            console.error("Error when Signing In, Reason: " + reason.error);
+            toastr.error(`Error: ${reason.error}`, "Sign-In");
+            console.error(`Error when Signing In, Reason: ${reason.error}`);
         });
-    };
-    GoogleAPIHandler.prototype.LoadYoutubeAPI = function () {
+    }
+    LoadYoutubeAPI() {
         if (!this.apiKey) {
             console.log("No API Key Specificed");
             Utils.SetCurrentStatusMessage("ERROR: No API Key Specificed", false);
@@ -58,45 +56,103 @@ var GoogleAPIHandler = /** @class */ (function () {
             console.log("Youtube Data API Ready");
         }, function (reason) {
             that.isYoutubeDataAPIReady = false;
-            Utils.SetCurrentStatusMessage("API ERROR: " + reason.error.message, false);
-            toastr.error("Failed to Load Youtube API. " + reason.error.message, "Youtube API");
-            console.error("Failed to load API, Reason: " + reason.error.message);
+            Utils.SetCurrentStatusMessage(`API ERROR: ${reason.error.message}`, false);
+            toastr.error(`Failed to Load Youtube API. ${reason.error.message}`, "Youtube API");
+            console.error(`Failed to load API, Reason: ${reason.error.message}`);
         });
-    };
-    return GoogleAPIHandler;
-}());
-var shuffler;
+    }
+}
+let shuffler;
 function main() {
-    var apiKey = Utils.GetCookie("APIKey");
-    var clientId = Utils.GetCookie("ClientId");
+    let apiKey = Utils.GetCookie("APIKey");
+    let clientId = Utils.GetCookie("ClientId");
     shuffler = new YoutubePlaylistShuffler(apiKey, clientId);
 }
 window.onload = function () {
     gapi.load("client:auth2", main);
 };
-var ProgressHandler = /** @class */ (function () {
-    function ProgressHandler() {
+var SaveType;
+(function (SaveType) {
+    SaveType[SaveType["Queued"] = 0] = "Queued";
+    SaveType[SaveType["Completed"] = 1] = "Completed";
+})(SaveType || (SaveType = {}));
+class ProgressHandler {
+    constructor() {
+        this.youtubeDataAPI = new YoutubeDataAPIHandler();
     }
-    ProgressHandler.prototype.GetSavedProgress = function () {
-    };
-    ProgressHandler.prototype.SaveProgrss = function () {
-    };
-    return ProgressHandler;
-}());
+    GetSavedProgress() {
+        let savedProgress = localStorage.getItem("savedProgress");
+        if (!savedProgress) {
+            return null;
+        }
+        let saved = JSON.parse(savedProgress);
+        var fetchedItems = [];
+        // Because saved.data stores value in {playlistId: positions[]}, element is alreay playlistId
+        Object.keys(saved.data).forEach((element) => {
+            this.youtubeDataAPI.FetchPlaylistItems(element, function (data) {
+                var item = {
+                    "playlistId": element,
+                    "items": data
+                };
+                fetchedItems.push(item);
+            });
+        });
+        var playlistCompleted = [];
+        var playlistQueued = [];
+        // Completed means the SaveData.itmes stores list of video positions that has been played
+        fetchedItems.forEach(element => {
+            // Performace increase? Maybe
+            let items = new Set(saved.data[element.playlistId]);
+            element.items.forEach(e => {
+                // Short Circuit Evaulation
+                if (e.snippet && e.snippet.position && items.has(e.snippet.position)) {
+                    let _ = saved.type === SaveType.Completed ? playlistCompleted.push(e) : playlistQueued.push(e);
+                }
+                else {
+                    let _ = saved.type === SaveType.Completed ? playlistQueued.push(e) : playlistCompleted.push(e);
+                }
+            });
+        });
+        return { "completed": playlistCompleted, "queued": playlistQueued };
+    }
+    SaveProgrss(playlistCompleted, playlistQueued) {
+        let saveType = playlistCompleted.length < playlistQueued.length ? SaveType.Completed : SaveType.Queued;
+    }
+    DiscardProgress() {
+        var discard = true;
+        // Make copy of object that is not a reference;
+        let option = Object.create(toastr.options);
+        var that = this;
+        option.onclick = function () {
+            discard = false;
+            toastr.info("Discard Aborted", "Progress");
+        };
+        option.onHidden = function () {
+            if (discard) {
+                that.DiscardProgressActual();
+                toastr.error("Saved playlist Discarded", "Progress");
+            }
+        };
+        toastr.warning("Saved Progress will be discarded in 10 seconds. <br>Click here to cancel", "Progress", option);
+    }
+    DiscardProgressActual() {
+        localStorage.removeItem("savedProgress");
+    }
+}
 var Interaction;
 (function (Interaction) {
-    var PlaylistPlayAction;
+    let PlaylistPlayAction;
     (function (PlaylistPlayAction) {
         PlaylistPlayAction[PlaylistPlayAction["NORMAL"] = 0] = "NORMAL";
         PlaylistPlayAction[PlaylistPlayAction["MERGE"] = 1] = "MERGE";
         PlaylistPlayAction[PlaylistPlayAction["REPLACE"] = 2] = "REPLACE";
     })(PlaylistPlayAction = Interaction.PlaylistPlayAction || (Interaction.PlaylistPlayAction = {}));
-    var VideoOperation;
+    let VideoOperation;
     (function (VideoOperation) {
         VideoOperation[VideoOperation["NEXT"] = 0] = "NEXT";
         VideoOperation[VideoOperation["REPEAT"] = 1] = "REPEAT";
     })(VideoOperation = Interaction.VideoOperation || (Interaction.VideoOperation = {}));
-    var SaveOperation;
+    let SaveOperation;
     (function (SaveOperation) {
         SaveOperation[SaveOperation["SAVE"] = 0] = "SAVE";
         SaveOperation[SaveOperation["DISCARD"] = 1] = "DISCARD";
@@ -104,39 +160,39 @@ var Interaction;
         SaveOperation[SaveOperation["LOAD"] = 3] = "LOAD";
     })(SaveOperation = Interaction.SaveOperation || (Interaction.SaveOperation = {}));
 })(Interaction || (Interaction = {}));
-var UIManager = /** @class */ (function () {
-    function UIManager(onPlaylistAction, onVideoAction, onSaveAction) {
+class UIManager {
+    constructor(onPlaylistAction, onVideoAction, onSaveAction) {
         this.onPlaylistAction = onPlaylistAction;
         this.onVideoAction = onVideoAction;
         this.onSaveAction = onSaveAction;
         this.SetToastrOption();
     }
-    UIManager.prototype.SetToastrOption = function () {
+    SetToastrOption() {
         toastr.options.timeOut = 10000;
         toastr.options.extendedTimeOut = 3000;
         toastr.options.progressBar = true;
-    };
-    UIManager.prototype.BindElements = function () {
+    }
+    BindElements() {
         this.BindPlaylistOpElements();
         this.BindSaveOpElements();
         this.BindVideoOpElements();
-    };
-    UIManager.prototype.BindPlaylistOpElements = function () {
+    }
+    BindPlaylistOpElements() {
         var that = this;
         $("#play-playlist").on("click", function (event) {
-            var data = $("#playlist-input").val();
+            let data = $("#playlist-input").val();
             that.onPlaylistAction(Interaction.PlaylistPlayAction.NORMAL, data);
         });
         $("#playlist-op-replace").on("click", function (event) {
-            var data = $("#playlist-input").val();
+            let data = $("#playlist-input").val();
             that.onPlaylistAction(Interaction.PlaylistPlayAction.REPLACE, data);
         });
         $("#playlist-op-merge").on("click", function (event) {
-            var data = $("#playlist-input").val();
+            let data = $("#playlist-input").val();
             that.onPlaylistAction(Interaction.PlaylistPlayAction.MERGE, data);
         });
-    };
-    UIManager.prototype.BindVideoOpElements = function () {
+    }
+    BindVideoOpElements() {
         var that = this;
         $("#video-repeat").on("click", function (event) {
             that.onVideoAction(Interaction.VideoOperation.REPEAT, undefined);
@@ -144,8 +200,8 @@ var UIManager = /** @class */ (function () {
         $("#video-next").on("click", function (event) {
             that.onVideoAction(Interaction.VideoOperation.NEXT, undefined);
         });
-    };
-    UIManager.prototype.BindSaveOpElements = function () {
+    }
+    BindSaveOpElements() {
         var that = this;
         $("#save-progress").on("click", function (event) {
             that.onSaveAction(Interaction.SaveOperation.SAVE, undefined);
@@ -159,17 +215,19 @@ var UIManager = /** @class */ (function () {
         $("#saved-discard").on("click", function (event) {
             that.onSaveAction(Interaction.SaveOperation.DISCARD, undefined);
         });
-    };
-    UIManager.prototype.ShowActivePlaylistOpModal = function () {
+    }
+    ShowActivePlaylistOpModal() {
         $("#playlistExistOp").show();
-    };
-    return UIManager;
-}());
+    }
+    ShowProgressOpModal() {
+        $("#playlistSavedAskOp").show();
+    }
+}
 var Utils;
 (function (Utils) {
     function GetQueryParams(qs, name) {
         try {
-            var url = new URL(qs);
+            let url = new URL(qs);
             return url.searchParams.get(name);
         }
         catch (e) {
@@ -179,7 +237,7 @@ var Utils;
     Utils.GetQueryParams = GetQueryParams;
     function SetCurrentStatusMessage(message, enableSpinner) {
         document.getElementById("status-message").innerText = message;
-        var spinElement = $("#status-spin");
+        let spinElement = $("#status-spin");
         if (enableSpinner) {
             if (spinElement.hasClass("d-none"))
                 spinElement.removeClass("d-none");
@@ -192,18 +250,18 @@ var Utils;
     Utils.SetCurrentStatusMessage = SetCurrentStatusMessage;
     function GetCookie(name) {
         var _a;
-        var value = "; " + document.cookie;
-        var parts = value.split("; " + name + "=");
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
         if (parts.length === 2)
             return (_a = parts.pop()) === null || _a === void 0 ? void 0 : _a.split(';').shift();
     }
     Utils.GetCookie = GetCookie;
     function SetCookie(name, value) {
-        document.cookie = name + "=" + value + "; expires=Fri, 31 Dec 2037 23:59:59 GMT";
+        document.cookie = `${name}=${value}; expires=Fri, 31 Dec 2037 23:59:59 GMT`;
     }
     Utils.SetCookie = SetCookie;
     function Shuffle(arr) {
-        var i = arr.length, j, temp;
+        let i = arr.length, j, temp;
         while (--i > 0) {
             j = Math.floor(Math.random() * (i + 1));
             temp = arr[j];
@@ -213,36 +271,30 @@ var Utils;
     }
     Utils.Shuffle = Shuffle;
 })(Utils || (Utils = {}));
-var YoutubeDataAPIHandler = /** @class */ (function () {
-    function YoutubeDataAPIHandler() {
-    }
-    YoutubeDataAPIHandler.prototype.GetPlaylistDetails = function (playlistId, pageToken, parts) {
-        if (pageToken === void 0) { pageToken = ""; }
-        if (parts === void 0) { parts = ["snippet"]; }
+class YoutubeDataAPIHandler {
+    constructor() { }
+    GetPlaylistDetails(playlistId, pageToken = "", parts = ["snippet"]) {
         return gapi.client.youtube.playlistItems.list({
             "part": parts,
             "maxResults": 50,
             "pageToken": pageToken,
             "playlistId": playlistId
         });
-    };
-    YoutubeDataAPIHandler.prototype.FetchPlaylistItems = function (playlistId, callback, fetchedItems, pageId) {
+    }
+    FetchPlaylistItems(playlistId, callback, fetchedItems = [], pageId = undefined) {
         // let fetchedItems: gapi.client.youtube.PlaylistItem[] = [];
         // let respPageId: (string | undefined);
-        if (fetchedItems === void 0) { fetchedItems = []; }
-        if (pageId === void 0) { pageId = undefined; }
         var that = this;
         this.GetPlaylistDetails(playlistId, pageId).then(function (resp) {
-            var _a, _b;
+            var _a;
             pageId = resp.result.nextPageToken;
             if (!resp.result.items) {
                 console.log("No Items in the result set??");
             }
             else {
-                fetchedItems.push.apply(fetchedItems, resp.result.items);
+                fetchedItems.push(...resp.result.items);
             }
-            console.log("Fetching Playlist " + fetchedItems.length + "/" + ((_a = resp.result.pageInfo) === null || _a === void 0 ? void 0 : _a.totalResults));
-            Utils.SetCurrentStatusMessage("Fetching Playlist " + fetchedItems.length + "/" + ((_b = resp.result.pageInfo) === null || _b === void 0 ? void 0 : _b.totalResults), true);
+            Utils.SetCurrentStatusMessage(`Fetching Playlist ${fetchedItems.length}/${(_a = resp.result.pageInfo) === null || _a === void 0 ? void 0 : _a.totalResults}`, true);
             if (pageId) {
                 that.FetchPlaylistItems(playlistId, callback, fetchedItems, pageId);
             }
@@ -250,18 +302,17 @@ var YoutubeDataAPIHandler = /** @class */ (function () {
                 callback(fetchedItems);
             }
         }, function (err) {
-            console.error("Error fetching playlist: " + err.result.error.message);
-            toastr.error("ERROR: " + err.result.error.message, "Playlist");
+            console.error(`Error fetching playlist: ${err.result.error.message}`);
+            toastr.error(`ERROR: ${err.result.error.message}`, "Playlist");
         });
-    };
-    return YoutubeDataAPIHandler;
-}());
-var YoutubePlayerAPIHandler = /** @class */ (function () {
-    function YoutubePlayerAPIHandler(onPlayerStateChangeCallback, onPlayerReadyCallback) {
+    }
+}
+class YoutubePlayerAPIHandler {
+    constructor(onPlayerStateChangeCallback, onPlayerReadyCallback) {
         this.onPlayerStateChangeCallback = onPlayerStateChangeCallback;
         this.onPlayerReadyCallback = onPlayerReadyCallback;
     }
-    YoutubePlayerAPIHandler.prototype.PlayVideo = function (videoId) {
+    PlayVideo(videoId) {
         var that = this;
         if (this.player === undefined) {
             this.player = new YT.Player('player', {
@@ -279,18 +330,17 @@ var YoutubePlayerAPIHandler = /** @class */ (function () {
         else {
             this.player.loadVideoById(videoId);
         }
-    };
-    YoutubePlayerAPIHandler.prototype.Init = function () {
+    }
+    Init() {
         console.log("INITIZING PLAYER IFRAME");
-        var tag = document.createElement('script');
+        let tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-    };
-    return YoutubePlayerAPIHandler;
-}());
-var YoutubePlaylistShuffler = /** @class */ (function () {
-    function YoutubePlaylistShuffler(apiKey, clientId) {
+    }
+}
+class YoutubePlaylistShuffler {
+    constructor(apiKey, clientId) {
         this.playlistItemsQueued = [];
         this.playlistItemsCompleted = [];
         this.uiManager = new UIManager(this.OnPlaylistPlay, this.OnVideoAction, this.OnSaveOperation);
@@ -303,10 +353,10 @@ var YoutubePlaylistShuffler = /** @class */ (function () {
         this.youtubePlayerHandler.Init();
         this.progressHandler = new ProgressHandler();
     }
-    YoutubePlaylistShuffler.prototype.OnPlaylistPlay = function (type, data) {
+    OnPlaylistPlay(type, data) {
         shuffler.PlayPlaylist(data, type);
-    };
-    YoutubePlaylistShuffler.prototype.OnVideoAction = function (type, data) {
+    }
+    OnVideoAction(type, data) {
         switch (type) {
             case Interaction.VideoOperation.NEXT:
                 shuffler.PlayNextVideo();
@@ -317,8 +367,8 @@ var YoutubePlaylistShuffler = /** @class */ (function () {
             default:
                 break;
         }
-    };
-    YoutubePlaylistShuffler.prototype.OnSaveOperation = function (type, data) {
+    }
+    OnSaveOperation(type, data) {
         switch (type) {
             case Interaction.SaveOperation.SAVE:
                 break;
@@ -330,18 +380,17 @@ var YoutubePlaylistShuffler = /** @class */ (function () {
             default:
                 break;
         }
-    };
-    YoutubePlaylistShuffler.prototype.PlayPlaylist = function (playlist, action) {
-        var playlistId = Utils.GetQueryParams(playlist, "list") || playlist;
+    }
+    PlayPlaylist(playlist, action) {
+        let playlistId = Utils.GetQueryParams(playlist, "list") || playlist;
         if (this.playlistItemsQueued.length != 0 && action == Interaction.PlaylistPlayAction.NORMAL) {
             this.uiManager.ShowActivePlaylistOpModal();
             return;
         }
         var that = this;
         this.youtubeDataHandler.FetchPlaylistItems(playlistId, function (fetchedItems) {
-            var _a;
             if (action === Interaction.PlaylistPlayAction.MERGE) {
-                (_a = that.playlistItemsQueued).push.apply(_a, fetchedItems);
+                that.playlistItemsQueued.push(...fetchedItems);
             }
             else {
                 that.playlistItemsQueued = fetchedItems;
@@ -351,30 +400,34 @@ var YoutubePlaylistShuffler = /** @class */ (function () {
             Utils.Shuffle(that.playlistItemsQueued);
             that.PlayNextVideo();
         });
-    };
-    YoutubePlaylistShuffler.prototype.PlayNextVideo = function () {
-        var item = this.playlistItemsQueued.pop();
+    }
+    PlayNextVideo() {
+        let item = this.playlistItemsQueued.pop();
         if (!item) {
             console.log("Queued items depleted");
             return;
         }
         this.playlistItemsCompleted.push(item);
-        Utils.SetCurrentStatusMessage("Playing: " + this.playlistItemsCompleted.length + "/" + (this.playlistItemsCompleted.length + this.playlistItemsQueued.length), false);
+        Utils.SetCurrentStatusMessage(`Playing: ${this.playlistItemsCompleted.length}/${this.playlistItemsCompleted.length + this.playlistItemsQueued.length}`, false);
         if (item.snippet && item.snippet.resourceId && item.snippet.resourceId.videoId) {
             this.youtubePlayerHandler.PlayVideo(item.snippet.resourceId.videoId);
         }
         else {
-            console.log("ERROR: FAILED TO PLAY VIDEO, VideoId in \"item.snippet.resourceId.videoId\" is undefined or null. " + item);
+            console.log(`ERROR: FAILED TO PLAY VIDEO, VideoId in "item.snippet.resourceId.videoId" is undefined or null. ${item}`);
         }
-    };
-    YoutubePlaylistShuffler.prototype.RepeatVideo = function () {
-    };
-    YoutubePlaylistShuffler.prototype.onYoutubePlayerReady = function (event) {
+    }
+    RepeatVideo() {
+        let video = shuffler.playlistItemsCompleted.pop();
+        if (video)
+            shuffler.playlistItemsQueued.push(video);
+    }
+    onYoutubePlayerReady(event) {
         console.log("PLAYER READY;");
         event.target.playVideo();
-    };
-    YoutubePlaylistShuffler.prototype.onYoutubePlayerStateChange = function (event) {
-        console.log("PLAYER STATE CHANGED");
-    };
-    return YoutubePlaylistShuffler;
-}());
+    }
+    onYoutubePlayerStateChange(event) {
+        if (event.data === YT.PlayerState.ENDED) {
+            shuffler.PlayNextVideo();
+        }
+    }
+}

@@ -1,3 +1,4 @@
+
 class YoutubePlaylistShuffler
 {
     googleAPIHandler: GoogleAPIHandler;
@@ -112,7 +113,9 @@ class YoutubePlaylistShuffler
 
     public RepeatVideo()
     {
-
+        let video = shuffler.playlistItemsCompleted.pop();
+        if (video)
+            shuffler.playlistItemsQueued.push(video);
     }
 
     private onYoutubePlayerReady(event: YT.PlayerEvent)
@@ -121,8 +124,11 @@ class YoutubePlaylistShuffler
         event.target.playVideo();
     }
 
-    private onYoutubePlayerStateChange(event: YT.PlayerEvent)
+    private onYoutubePlayerStateChange(event: YT.OnStateChangeEvent)
     {
-        console.log("PLAYER STATE CHANGED");
+        if (event.data === YT.PlayerState.ENDED)
+        {
+            shuffler.PlayNextVideo();
+        }
     }
 }

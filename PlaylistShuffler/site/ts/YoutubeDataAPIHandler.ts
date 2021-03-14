@@ -30,7 +30,6 @@ class YoutubeDataAPIHandler {
                 {
                     fetchedItems.push(...resp.result.items);
                 }
-                console.log(`Fetching Playlist ${fetchedItems.length}/${resp.result.pageInfo?.totalResults}`)
                 Utils.SetCurrentStatusMessage(`Fetching Playlist ${fetchedItems.length}/${resp.result.pageInfo?.totalResults}`, true);
 
                 if (pageId)
