@@ -8,27 +8,23 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="apiConfig">
+                <form id="apiConfig" onsubmit="return false">
                     <div class="form-group">
                         <label for="clientIdInput">Client ID</label>
-                        <input type="text" class="form-control" id="clientIdInput" aria-describedby="emailHelp">
-                        <small id="emailHelp" class="form-text text-muted">This is optional unless you want to login
+                        <input type="text" name="clientId" class="form-control" id="clientIdInput" aria-describedby="clientIdHelp">
+                        <small id="clientIdHelp" class="form-text text-muted">This is optional unless you want to login
                             to your google account</small>
                     </div>
                     <div class="form-group">
                         <label for="apiKeyInput">API Key</label>
-                        <input type="text" class="form-control" id="apiKeyInput">
+                        <input type="text" name="apiKey" class="form-control" id="apiKeyInput">
                     </div>
                     <div class="form-group form-check">
-                        <input type="checkbox" class="form-check-input" id="rememberThis" checked>
+                        <input type="checkbox" name="remember" class="form-check-input" id="rememberThis" checked>
                         <label class="form-check-label" for="rememberThis">Save this data</label>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block">Apply</button>
+                    <button id="apply-api" class="btn btn-primary btn-block">Apply</button>
                 </form>
-            </div>
-            <div class="modal-footer">
-<!--                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
-<!--                <button type="button" class="btn btn-primary">Apply</button>-->
             </div>
         </div>
     </div>

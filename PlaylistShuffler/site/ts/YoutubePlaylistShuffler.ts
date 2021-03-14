@@ -12,8 +12,9 @@ class YoutubePlaylistShuffler
 
     constructor(apiKey?: string, clientId?: string)
     {
-        this.uiManager = new UIManager(this.OnPlaylistPlay, this.OnVideoAction, this.OnSaveOperation);
+        this.uiManager = new UIManager(this.OnPlaylistPlay, this.OnVideoAction, this.OnSaveOperation, this.OnAdvSettingsSubmit);
         this.uiManager.BindElements();
+        this.uiManager.SetAdvancedSettingModalData(apiKey, clientId);
 
         this.googleAPIHandler = new GoogleAPIHandler(apiKey, clientId);
         this.googleAPIHandler.LoadYoutubeAPI();
@@ -25,6 +26,11 @@ class YoutubePlaylistShuffler
         this.youtubePlayerHandler.Init();
 
         this.progressHandler = new ProgressHandler();
+
+        if (this.progressHandler.DoSavedProgressExist())
+        {
+            this.uiManager.ShowProgressOpModal();
+        }
     }
 
     private OnPlaylistPlay(type: Interaction.PlaylistPlayAction, data: any)
@@ -56,9 +62,10 @@ class YoutubePlaylistShuffler
                 var that = this;
                 shuffler.progressHandler.GetSavedProgress(function(data)
                 {
-                    that.playlistItemsCompleted = data.completed;
-                    that.playlistItemsQueued = data.queued;
-                    that.PlayNextVideo();
+                    shuffler.playlistItemsCompleted = data.completed;
+                    shuffler.playlistItemsQueued = data.queued;
+                    Utils.Shuffle(shuffler.playlistItemsQueued);
+                    shuffler.PlayNextVideo();
                 });
                 break;
             case Interaction.SaveOperation.DISCARD:
@@ -68,6 +75,19 @@ class YoutubePlaylistShuffler
             default:
                 break;
         }
+    }
+
+    private OnAdvSettingsSubmit(data: {[key: string]: string})
+    {
+        if (data.remember === "on")
+        {
+            Utils.SetCookie("APIKey", data.apiKey);
+            Utils.SetCookie("ClientId", data.clientId);
+        }
+        shuffler.googleAPIHandler.setAPIKey(data.apiKey);
+        shuffler.googleAPIHandler.setClientId(data.clientId);
+        shuffler.googleAPIHandler.LoadAuthAPI();
+        shuffler.googleAPIHandler.LoadYoutubeAPI();
     }
 
     private PlayPlaylist(playlist: string, action: Interaction.PlaylistPlayAction)
@@ -94,7 +114,14 @@ class YoutubePlaylistShuffler
             }
 
             Utils.Shuffle(that.playlistItemsQueued);
-            that.PlayNextVideo();
+            if (action !== Interaction.PlaylistPlayAction.MERGE)
+            {
+                that.PlayNextVideo();
+            }
+            else
+            {
+                Utils.SetCurrentStatusMessage(`Playing: ${that.playlistItemsCompleted.length}/${that.playlistItemsCompleted.length + that.playlistItemsQueued.length}`, false);
+            }
         });
     }
 

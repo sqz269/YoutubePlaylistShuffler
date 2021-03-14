@@ -25,6 +25,11 @@ class ProgressHandler {
         this.youtubeDataAPI = new YoutubeDataAPIHandler();
     }
 
+    public DoSavedProgressExist(): boolean
+    {
+        return localStorage.getItem("savedProgress") != null;
+    }
+
     public GetSavedProgress(callback: (data: {completed : gapi.client.youtube.PlaylistItem[], 
                                                queued: gapi.client.youtube.PlaylistItem[]}) => any)
     {
@@ -127,6 +132,7 @@ class ProgressHandler {
             "data": data
         }
 
+        toastr.success(`Progress Saved. (${Object.keys(saveData.data).length} Playlists)`, "Progress");
         localStorage.setItem("savedProgress", JSON.stringify(saveData));
     }
 

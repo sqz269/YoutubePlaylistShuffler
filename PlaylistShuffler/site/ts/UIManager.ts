@@ -24,19 +24,25 @@ module Interaction
 
 class UIManager
 {
-    onPlaylistAction: ((type: Interaction.PlaylistPlayAction, data: any) => any | undefined);
+    onPlaylistAction: ((type: Interaction.PlaylistPlayAction, data: any) => any);
 
-    onVideoAction: ((type: Interaction.VideoOperation, data: any) => any | undefined);
+    onVideoAction: ((type: Interaction.VideoOperation, data: any) => any);
 
-    onSaveAction: ((type: Interaction.SaveOperation, data: any) => any | undefined);
+    onSaveAction: ((type: Interaction.SaveOperation, data: any) => any);
+
+    onAdvFormSubmit: ((data: {[key: string]: string}) => any);
+
+    advSettingsForm = $("#apiConfig");
 
     constructor(onPlaylistAction: (type: Interaction.PlaylistPlayAction, data: any) => any, 
                 onVideoAction: (type: Interaction.VideoOperation, data: any) => any, 
-                onSaveAction: (type: Interaction.SaveOperation, data: any) => any)
+                onSaveAction: (type: Interaction.SaveOperation, data: any) => any,
+                onAdvFormSubmit: (data: {[key: string]: string}) => any)
     {
         this.onPlaylistAction = onPlaylistAction;
         this.onVideoAction = onVideoAction;
         this.onSaveAction = onSaveAction;
+        this.onAdvFormSubmit = onAdvFormSubmit;
 
         this.SetToastrOption();
     }
@@ -44,7 +50,7 @@ class UIManager
     public SetToastrOption()
     {
         toastr.options.timeOut = 10000;
-        toastr.options.extendedTimeOut = 3000;
+        toastr.options.extendedTimeOut = 2000;
         toastr.options.progressBar = true;
     }
 
@@ -53,6 +59,26 @@ class UIManager
         this.BindPlaylistOpElements();
         this.BindSaveOpElements();
         this.BindVideoOpElements();
+    }
+
+    public SetAdvancedSettingModalData(apiKey: string | undefined, clientId: string | undefined)
+    {
+        $("#clientIdInput").val(clientId || "");
+        $("#apiKeyInput").val(apiKey || "");
+    }
+
+    public OnAdvancedSettingsSubmit()
+    {
+        var that = this;
+        this.advSettingsForm.on("submit", function(e)
+        {
+            e.preventDefault();
+            let result: {[key: string]: string} = {};
+            that.advSettingsForm.serializeArray().forEach(element => 
+            {
+                result[element.name] = element.value;
+            });
+        });
     }
 
     private BindPlaylistOpElements()

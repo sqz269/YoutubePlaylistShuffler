@@ -28,7 +28,7 @@ class GoogleAPIHandler {
     Authorize() {
         if (!this.isAuthAPIReady || !this.auth) {
             console.error("Unable to open signin window, auth api not loaded. Call LoadAuthAPI before calling Authorize");
-            toastr.warning("Warning: No Client Id Specificed, Authorize (Playing Private Playlist) Will be disabled until a valid Client Id is supplied", "Initialize");
+            toastr.warning("No Client Id Specificed, Authorize Will be disabled until a valid Client Id is supplied", "Auth");
             return;
         }
         var that = this;
@@ -79,6 +79,9 @@ var SaveType;
 class ProgressHandler {
     constructor() {
         this.youtubeDataAPI = new YoutubeDataAPIHandler();
+    }
+    DoSavedProgressExist() {
+        return localStorage.getItem("savedProgress") != null;
     }
     GetSavedProgress(callback) {
         let savedProgress = localStorage.getItem("savedProgress");
@@ -151,6 +154,7 @@ class ProgressHandler {
             "type": saveType,
             "data": data
         };
+        toastr.success(`Progress Saved. (${Object.keys(saveData.data).length} Playlists)`, "Progress");
         localStorage.setItem("savedProgress", JSON.stringify(saveData));
     }
     DiscardProgress() {
@@ -196,21 +200,37 @@ var Interaction;
     })(SaveOperation = Interaction.SaveOperation || (Interaction.SaveOperation = {}));
 })(Interaction || (Interaction = {}));
 class UIManager {
-    constructor(onPlaylistAction, onVideoAction, onSaveAction) {
+    constructor(onPlaylistAction, onVideoAction, onSaveAction, onAdvFormSubmit) {
+        this.advSettingsForm = $("#apiConfig");
         this.onPlaylistAction = onPlaylistAction;
         this.onVideoAction = onVideoAction;
         this.onSaveAction = onSaveAction;
+        this.onAdvFormSubmit = onAdvFormSubmit;
         this.SetToastrOption();
     }
     SetToastrOption() {
         toastr.options.timeOut = 10000;
-        toastr.options.extendedTimeOut = 3000;
+        toastr.options.extendedTimeOut = 2000;
         toastr.options.progressBar = true;
     }
     BindElements() {
         this.BindPlaylistOpElements();
         this.BindSaveOpElements();
         this.BindVideoOpElements();
+    }
+    SetAdvancedSettingModalData(apiKey, clientId) {
+        $("#clientIdInput").val(clientId || "");
+        $("#apiKeyInput").val(apiKey || "");
+    }
+    OnAdvancedSettingsSubmit() {
+        var that = this;
+        this.advSettingsForm.on("submit", function (e) {
+            e.preventDefault();
+            let result = {};
+            that.advSettingsForm.serializeArray().forEach(element => {
+                result[element.name] = element.value;
+            });
+        });
     }
     BindPlaylistOpElements() {
         var that = this;
@@ -378,8 +398,9 @@ class YoutubePlaylistShuffler {
     constructor(apiKey, clientId) {
         this.playlistItemsQueued = [];
         this.playlistItemsCompleted = [];
-        this.uiManager = new UIManager(this.OnPlaylistPlay, this.OnVideoAction, this.OnSaveOperation);
+        this.uiManager = new UIManager(this.OnPlaylistPlay, this.OnVideoAction, this.OnSaveOperation, this.OnAdvSettingsSubmit);
         this.uiManager.BindElements();
+        this.uiManager.SetAdvancedSettingModalData(apiKey, clientId);
         this.googleAPIHandler = new GoogleAPIHandler(apiKey, clientId);
         this.googleAPIHandler.LoadYoutubeAPI();
         this.googleAPIHandler.LoadAuthAPI();
@@ -387,6 +408,9 @@ class YoutubePlaylistShuffler {
         this.youtubePlayerHandler = new YoutubePlayerAPIHandler(this.onYoutubePlayerStateChange, this.onYoutubePlayerReady);
         this.youtubePlayerHandler.Init();
         this.progressHandler = new ProgressHandler();
+        if (this.progressHandler.DoSavedProgressExist()) {
+            this.uiManager.ShowProgressOpModal();
+        }
     }
     OnPlaylistPlay(type, data) {
         shuffler.PlayPlaylist(data, type);
@@ -411,9 +435,10 @@ class YoutubePlaylistShuffler {
             case Interaction.SaveOperation.LOAD:
                 var that = this;
                 shuffler.progressHandler.GetSavedProgress(function (data) {
-                    that.playlistItemsCompleted = data.completed;
-                    that.playlistItemsQueued = data.queued;
-                    that.PlayNextVideo();
+                    shuffler.playlistItemsCompleted = data.completed;
+                    shuffler.playlistItemsQueued = data.queued;
+                    Utils.Shuffle(shuffler.playlistItemsQueued);
+                    shuffler.PlayNextVideo();
                 });
                 break;
             case Interaction.SaveOperation.DISCARD:
@@ -423,6 +448,16 @@ class YoutubePlaylistShuffler {
             default:
                 break;
         }
+    }
+    OnAdvSettingsSubmit(data) {
+        if (data.remember === "on") {
+            Utils.SetCookie("APIKey", data.apiKey);
+            Utils.SetCookie("ClientId", data.clientId);
+        }
+        shuffler.googleAPIHandler.setAPIKey(data.apiKey);
+        shuffler.googleAPIHandler.setClientId(data.clientId);
+        shuffler.googleAPIHandler.LoadAuthAPI();
+        shuffler.googleAPIHandler.LoadYoutubeAPI();
     }
     PlayPlaylist(playlist, action) {
         let playlistId = Utils.GetQueryParams(playlist, "list") || playlist;
@@ -441,7 +476,12 @@ class YoutubePlaylistShuffler {
                 that.playlistItemsCompleted.length = 0;
             }
             Utils.Shuffle(that.playlistItemsQueued);
-            that.PlayNextVideo();
+            if (action !== Interaction.PlaylistPlayAction.MERGE) {
+                that.PlayNextVideo();
+            }
+            else {
+                Utils.SetCurrentStatusMessage(`Playing: ${that.playlistItemsCompleted.length}/${that.playlistItemsCompleted.length + that.playlistItemsQueued.length}`, false);
+            }
         });
     }
     PlayNextVideo() {

@@ -50,7 +50,7 @@ class GoogleAPIHandler
         {
             console.error("Unable to open signin window, auth api not loaded. Call LoadAuthAPI before calling Authorize");
 
-            toastr.warning("Warning: No Client Id Specificed, Authorize (Playing Private Playlist) Will be disabled until a valid Client Id is supplied", "Initialize");
+            toastr.warning("No Client Id Specificed, Authorize Will be disabled until a valid Client Id is supplied", "Auth");
             return;
         }
 
