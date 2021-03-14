@@ -64,8 +64,8 @@ class GoogleAPIHandler {
 }
 let shuffler;
 function main() {
-    let apiKey = Utils.GetCookie("APIKey");
-    let clientId = Utils.GetCookie("ClientId");
+    let apiKey = Utils.GetCookie("APIKey") || "AIzaSyCy1ZyZplO51YBnzJGgkwrQj-WHi4rfgNs";
+    let clientId = Utils.GetCookie("ClientId") || "1016829549874-skkprhf6gt3i7l1r7979s9abc3tq4och.apps.googleusercontent.com";
     shuffler = new YoutubePlaylistShuffler(apiKey, clientId);
 }
 window.onload = function () {
